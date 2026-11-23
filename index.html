@@ -171,11 +171,11 @@
 <script>
   const tg = window.Telegram && window.Telegram.WebApp;
   if (tg) { tg.expand(); tg.ready(); }
-
   const DB_URL = "https:" + "//block-paisa-default-rtdb.asia-southeast1.firebasedatabase.app";
-  const userId = String((tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) || "guest_test");
-  const userName = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.first_name) || "Player";
-
+    const tgUser = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user;
+  const userId = tgUser ? String(tgUser.id) : "guest_" + (localStorage.getItem("bp_gid") || (() => { const id = Math.floor(Math.random()*999999); localStorage.setItem("bp_gid", id); return id; })());
+  const userName = tgUser ? (tgUser.first_name || "Player") : "Player";
+  
   let state = {
     wallet: 0.000,
     totalEarnedPts: 0,
