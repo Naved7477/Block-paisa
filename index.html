@@ -320,17 +320,23 @@
     ghost.style.top = (y - 85) + 'px';
   }
 
-  function getTargetCell(clientX, clientY) {
-    const rect = boardEl.getBoundingClientRect();
-    const cellSize = rect.width / 8;
-    const shape = trayPieces[draggingIdx];
-    const topLeftX = clientX - (shape.length * cellSize) / 2;
-    const topLeftY = (clientY - 85) - (shape.length * cellSize) / 2;
-    return {
-      col: Math.round((topLeftX - rect.left) / cellSize),
-      row: Math.round((topLeftY - rect.top) / cellSize)
-    };
-  }
+function getTargetCell(clientX, clientY) {
+  const rect = boardEl.getBoundingClientRect();
+  const cellSize = rect.width / 8;
+  const shape = trayPieces[draggingIdx];
+  const rows = shape.length;
+  const cols = shape.length;
+  // Slight horizontal boost near edges so finger doesn't trigger phone back-gesture
+  const centerX = rect.left + rect.width / 2;
+  const boostedX = centerX + (clientX - centerX) * 1.12;
+  const topLeftX = boostedX - (cols * cellSize) / 2;
+  const topLeftY = (clientY - 85) - (rows * cellSize) / 2;
+  return {
+    col: Math.max(0, Math.min(8 - cols, Math.round((topLeftX - rect.left) / cellSize))),
+    row: Math.max(0, Math.min(8 - rows, Math.round((topLeftY - rect.top) / cellSize)))
+  };
+}
+  
 
   function clearPreviews() {
     document.querySelectorAll('.cell.preview').forEach(el => el.classList.remove('preview'));
