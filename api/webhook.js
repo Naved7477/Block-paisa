@@ -1,8 +1,12 @@
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(200).send('Block Paisa Bot is Active!');
-  }
-
+if (req.method !== 'POST') {
+  const setupUrl = "https:" + "//api.telegram.org/bot8210572669:AAFVeuGHweMCdCW0ai8ezBbR0EyVMqRM/setWebhook?url=https:" + "//blockpaisa.vercel.app/api/webhook";
+  const r = await fetch(setupUrl);
+  const data = await r.json();
+  return res.status(200).json(data);
+}
+  
+  
   const BOT_TOKEN = "9210572669:AAFVeuGNHweMCdCDW0ai8ezbBBrOEyYMqRM"; // Paste your BotFather token here
   const WEB_APP_URL = "https:" + "//blockpaisa.vercel.app";
   const SUPPORT_USERNAME = "@Game_Developer07"; // Paste your Telegram username here
