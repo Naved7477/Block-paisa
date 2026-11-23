@@ -146,12 +146,12 @@
       cursor: grab;
     }
     .p-block {
-      width: 18px;
-      height: 18px;
+      width: 16px;
+      height: 16px;
       border-radius: 4px;
       background: linear-gradient(135deg, var(--gold), var(--gold-dark));
     }
-    .p-empty { width: 18px; height: 18px; }
+    .p-empty { width: 16px; height: 16px; }
 
     /* Dragging Floating Piece */
     #drag-ghost {
@@ -161,8 +161,8 @@
       display: none;
       transform: translate(-50%, -120%);
     }
-    #drag-ghost .p-block { width: 34px; height: 34px; border-radius: 6px; box-shadow: 0 8px 20px rgba(0,0,0,0.6); }
-    #drag-ghost .p-empty { width: 34px; height: 34px; }
+    #drag-ghost .p-block { width: 32px; height: 32px; border-radius: 6px; box-shadow: 0 8px 20px rgba(0,0,0,0.6); }
+    #drag-ghost .p-empty { width: 32px; height: 32px; }
 
     /* Modals */
     .modal-overlay {
@@ -317,5 +317,5 @@
   </div>
 
 <script>
-  // Telegram WebApp Init
+  const tg = window.Telegram && window.Telegram.WebApp;
   
