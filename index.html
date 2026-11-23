@@ -154,13 +154,21 @@
     .p-empty { width: 16px; height: 16px; }
 
     /* Dragging Floating Piece */
-    #drag-ghost {
+        #drag-ghost {
       position: fixed;
       pointer-events: none;
       z-index: 999;
       display: none;
-      transform: translate(-50%, -120%);
+      transform: translate(-50%, -50%);
     }
+    .cell.clearing {
+      animation: blastPop 0.35s ease-out forwards;
+    }
+    @keyframes blastPop {
+      0% { transform: scale(1.15); background: #ffffff; box-shadow: 0 0 15px #fff; }
+      100% { transform: scale(0); opacity: 0; }
+    }
+    
     #drag-ghost .p-block { width: 32px; height: 32px; border-radius: 6px; box-shadow: 0 8px 20px rgba(0,0,0,0.6); }
     #drag-ghost .p-empty { width: 32px; height: 32px; }
 
@@ -391,18 +399,23 @@
     renderTray();
   }
 
-  function renderTray() {
+    function renderTray() {
     for (let i = 0; i < 3; i++) {
       const slot = document.getElementById('slot-' + i);
       slot.innerHTML = '';
+      slot.onpointerdown = null;
       const shape = trayPieces[i];
       if (!shape) continue;
 
       const grid = createPieceElement(shape);
-      grid.onpointerdown = (e) => startDrag(e, i);
+      slot.onpointerdown = (e) => {
+        e.preventDefault();
+        startDrag(e, i);
+      };
       slot.appendChild(grid);
     }
-  }
+    }
+  
 
   function createPieceElement(shape) {
     const grid = document.createElement('div');
