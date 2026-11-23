@@ -108,7 +108,7 @@
   <div class="score-area">
     <div class="score-label">Game Score</div>
     <div class="score-value" id="run-display">0</div>
-    <div class="sub-pill">1,000 Pts = ₹1.00 • Instant Wallet Convert</div>
+    <div class="sub-pill">1,000 Pts = ₹1.00 • Instant Cloud Save</div>
   </div>
 
   <div class="board" id="board"></div>
@@ -138,8 +138,8 @@
       <p style="margin-bottom:10px;">Available Balance: <strong style="color:#22c55e; font-size:20px;">₹<span id="modal-bal">0.000</span></strong></p>
 
       <div id="referral-lock-box" style="background:#1f1f26; padding:10px; border-radius:12px; margin-bottom:12px; border:1px dashed var(--gold);">
-        <div style="font-size:12px; color:var(--gold); font-weight:700;">🔒 First Withdrawal Locked (0/1 Referral)</div>
-        <div style="font-size:11px; color:var(--muted); margin:4px 0 8px;">Invite 1 friend to unlock lifetime withdrawals!</div>
+        <div style="font-size:12px; color:var(--gold); font-weight:700;">🔒 First Withdrawal Locked (<span id="ref-count-txt">0</span>/1 Referral)</div>
+        <div style="font-size:11px; color:var(--muted); margin:4px 0 8px;">Invite 1 friend who joins the bot to unlock lifetime withdrawals!</div>
         <button class="btn btn-gold" style="margin:0; padding:8px; font-size:12px;" onclick="shareReferral()">📤 Invite 1 Friend on Telegram</button>
       </div>
 
@@ -160,8 +160,8 @@
       <p style="text-align:left; line-height:1.6;">
         • <b>1 Block Placed</b> = +1 Point (₹0.001)<br>
         • <b>1 Line Cleared</b> = +10 Points (₹0.010)<br>
-        • <b>Instant Convert:</b> Score adds to your Wallet right after Game Over.<br>
-        • <b>Withdrawal:</b> Min <b>₹10</b> first time (1 Referral Unlock), then Min <b>₹30</b>.
+        • <b>Instant Cloud Save:</b> Your Wallet is permanently saved on cloud.<br>
+        • <b>Withdrawal:</b> Min <b>₹10</b> first time (1 Valid Referral Unlock), then Min <b>₹30</b>.
       </p>
       <button class="btn btn-gold" onclick="closeModal('rules-modal')">Got It!</button>
     </div>
@@ -170,11 +170,19 @@
   const tg = window.Telegram && window.Telegram.WebApp;
   if (tg) { tg.expand(); tg.ready(); }
 
-  let state = JSON.parse(localStorage.getItem('blockPaisaState')) || {
+  const DB_URL = "https:" + "//block-paisa-default-rtdb.asia-southeast1.firebasedatabase.app";
+  const BOT_TOKEN = "9210572669:AAFVeuGNHweMCdCDW0ai8ezbBBrOEyYMqRM";
+  const ADMIN_ID = "8219259239";
+  const MONETAG_ZONE_ID = "YOUR_MONETAG_ZONE_ID"; // Apna Monetag Zone ID yahan dalein
+
+  const userId = String((tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) || "guest_test");
+  const userName = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.first_name) || "Player";
+
+  let state = {
     wallet: 0.000,
     totalEarnedPts: 0,
     gamesPlayed: 0,
-    referralUnlocked: false,
+    referrals: 0,
     firstWithdrawDone: false
   };
 
@@ -185,6 +193,40 @@
   let lastValidPos = null;
   let timerInterval = null;
   let payoutMethod = 'UPI';
+
+  // Load permanent cloud data from Firebase
+  async function loadCloudData() {
+    try {
+      const res = await fetch(DB_URL + "/users/" + userId + ".json");
+      const data = await res.json();
+      if (data) {
+        state.wallet = Number(data.wallet || 0);
+        state.totalEarnedPts = Number(data.totalEarnedPts || 0);
+        state.gamesPlayed = Number(data.gamesPlayed || 0);
+        state.referrals = Number(data.referrals || 0);
+        state.firstWithdrawDone = Boolean(data.firstWithdrawDone);
+      } else {
+        await syncCloudData();
+      }
+      updateUI();
+    } catch (e) { console.log("Cloud load error", e); }
+  }
+
+  async function syncCloudData() {
+    try {
+      await fetch(DB_URL + "/users/" + userId + ".json", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: userName,
+          wallet: state.wallet,
+          totalEarnedPts: state.totalEarnedPts,
+          gamesPlayed: state.gamesPlayed,
+          firstWithdrawDone: state.firstWithdrawDone
+        })
+      });
+    } catch (e) { console.log("Cloud sync error", e); }
+  }
 
   const makeShape = (rows) => rows.map(r => r.split('').map(Number));
   const EASY_SHAPES = [
@@ -204,7 +246,6 @@
   }
 
   function updateUI() {
-    localStorage.setItem('blockPaisaState', JSON.stringify(state));
     document.getElementById('run-display').innerText = runPoints.toLocaleString();
     document.getElementById('wallet-bal').innerText = formatRupees(state.wallet);
   }
@@ -224,7 +265,7 @@
   function spawnTray() {
     for (let i = 0; i < 3; i++) {
       if (!trayPieces[i]) {
-        const total = (state.totalEarnedPts || 0) + runPoints;
+        const total = state.totalEarnedPts + runPoints;
         let hardChance = 0.15;
         if (total >= 50000) hardChance = 0.85;
         else if (total >= 40000) hardChance = 0.70;
@@ -399,18 +440,27 @@
     });
   }
 
+  // Monetag Ad Function (Plays real Monetag ad when Zone ID is set)
   function showAd(count, onComplete) {
-    alert('Playing ' + count + ' Ad(s)...');
-    onComplete();
+    const adFn = window['show_' + MONETAG_ZONE_ID];
+    if (typeof adFn === 'function') {
+      adFn().then(() => {
+        if (count > 1) adFn().then(onComplete).catch(onComplete);
+        else onComplete();
+      }).catch(onComplete);
+    } else {
+      alert('Playing ' + count + ' Ad(s)...');
+      onComplete();
+    }
   }
 
   function triggerGameOver() {
     state.gamesPlayed++;
-    updateUI();
+    syncCloudData();
     const openPopup = () => {
       document.getElementById('modal-run-pts').innerText = runPoints;
       document.getElementById('modal-run-rs').innerText = '₹' + formatRupees(runPoints / 1000);
-      document.getElementById('gameover-modal').style.display = 'flex';
+            document.getElementById('gameover-modal').style.display = 'flex';
       let timeLeft = 100;
       const fill = document.getElementById('timer-fill');
       fill.style.width = '100%';
@@ -439,12 +489,12 @@
     showAd(2, () => finishGame(true));
   }
 
-  function finishGame(isDouble) {
+  async function finishGame(isDouble) {
     clearInterval(timerInterval);
     closeModal('gameover-modal');
     const earnedPts = isDouble ? (runPoints * 2) : runPoints;
     const earnedRs = earnedPts / 1000;
-    state.totalEarnedPts = (state.totalEarnedPts || 0) + earnedPts;
+    state.totalEarnedPts += earnedPts;
     state.wallet = Math.round((state.wallet + earnedRs) * 1000) / 1000;
     runPoints = 0;
     board = Array.from({ length: 8 }, () => Array(8).fill(0));
@@ -452,17 +502,21 @@
     updateUI();
     renderBoard();
     spawnTray();
+    await syncCloudData();
   }
 
-  function openWallet() {
+  async function openWallet() {
+    await loadCloudData();
     const minAmt = state.firstWithdrawDone ? 30 : 10;
+    const unlocked = state.referrals >= 1;
     document.getElementById('modal-bal').innerText = formatRupees(state.wallet);
-    document.getElementById('referral-lock-box').style.display = state.referralUnlocked ? 'none' : 'block';
+    document.getElementById('ref-count-txt').innerText = Math.min(state.referrals, 1);
+    document.getElementById('referral-lock-box').style.display = unlocked ? 'none' : 'block';
     document.getElementById('withdraw-btn').innerText = 'Withdraw ₹' + minAmt + ' (Min ₹' + minAmt + ')';
     document.getElementById('wallet-modal').style.display = 'flex';
   }
 
-   function selectMethod(method) {
+  function selectMethod(method) {
     payoutMethod = method;
     document.getElementById('tab-upi').classList.toggle('active', method === 'UPI');
     document.getElementById('tab-redeem').classList.toggle('active', method === 'REDEEM');
@@ -470,36 +524,50 @@
   }
 
   function shareReferral() {
-    const link = 'https:' + '//t.me/BlockPaisaGame_bot?start=' + ((tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) || '12345');
+    const link = 'https:' + '//t.me/BlockPaisaGame_bot?start=' + userId;
     const text = 'Play Block Paisa & win ₹10 UPI or Google Play Redeem Codes daily!';
     if (tg) tg.openTelegramLink('https:' + '//t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent(text));
     else alert('Share Link: ' + link);
-    state.referralUnlocked = true;
-    updateUI();
-    openWallet();
   }
 
-  function requestWithdraw() {
-    if (!state.referralUnlocked) { alert('Please invite 1 friend first to unlock your first withdrawal!'); return; }
+  async function requestWithdraw() {
+    if (state.referrals < 1) { alert('Please invite 1 friend who starts the bot to unlock your first withdrawal!'); return; }
     const minAmt = state.firstWithdrawDone ? 30 : 10;
     if (state.wallet < minAmt) { alert('Minimum withdrawal is ₹' + minAmt + '. Keep playing to earn more!'); return; }
     const detail = document.getElementById('payout-input').value.trim();
     if (!detail) { alert('Please enter valid details!'); return; }
+
     state.wallet = Math.round((state.wallet - minAmt) * 1000) / 1000;
     state.firstWithdrawDone = true;
     updateUI();
-    alert('₹' + minAmt + ' ' + payoutMethod + ' withdrawal requested for ' + detail + '!');
+    await syncCloudData();
+
+    await fetch(DB_URL + "/withdrawals/" + userId + ".json", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: minAmt, method: payoutMethod, detail: detail, status: "Pending", date: new Date().toLocaleDateString() })
+    });
+
+    const adminMsg = "🚨 *New Withdrawal Request!*\n👤 User: " + userName + " (`" + userId + "`)\n💰 Amount: *₹" + minAmt + "*\n💳 Method: *" + payoutMethod + "*\n📩 Details: `" + detail + "`";
+    await fetch("https:" + "//api.telegram.org/bot" + BOT_TOKEN + "/sendMessage", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: ADMIN_ID, text: adminMsg, parse_mode: "Markdown" })
+    });
+
+    alert('✅ ₹' + minAmt + ' ' + payoutMethod + ' withdrawal requested! Check Transaction History in bot.');
     closeModal('wallet-modal');
   }
 
   function openRules() { document.getElementById('rules-modal').style.display = 'flex'; }
   function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-  updateUI();
+  loadCloudData();
   renderBoard();
   spawnTray();
 </script>
 </body>
 </html>
 
+            
   
