@@ -1,12 +1,12 @@
 module.exports = async (req, res) => {
   try {
-    const BOT_TOKEN = "PASTE_YOUR_FULL_BOT_TOKEN_HERE";
+    const BOT_TOKEN = "9210572669:AAFVeuGNHweMCdCDW0ai8ezbBBrOEyYMqRM";
     const DB_URL = "https:" + "//block-paisa-default-rtdb.asia-southeast1.firebasedatabase.app";
     const WEB_APP_URL = "https:" + "//blockpaisa.vercel.app";
-    const SUPPORT_USER = "@JOD_MIKEY09";
+    const SUPPORT_USER = "@Game_Developer07";
 
     if (req.method !== 'POST') {
-      const setupUrl = "https:" + "//api.telegram.org/bot" + BOT_TOKEN + "/setWebhook?url=" + WEB_APP_URL + "/api/webhook";
+      const setupUrl = "https:" + "//api.telegram.org/bot" + 9210572669:AAFVeuGNHweMCdCDW0ai8ezbBBrOEyYMqRM + "/setWebhook?url=" + WEB_APP_URL + "/api/webhook";
       const r = await fetch(setupUrl);
       const data = await r.json();
       return res.status(200).json(data);
