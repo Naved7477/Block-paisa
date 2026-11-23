@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Block Paisa - Telegram Mini App</title>
+  <script src="https://telegram.org"></script>
+  <style>
+    :root {
+      --bg: #0c0c0e;
+      --card: #16161a;
+      --border: #2a2a32;
+      --gold: #f5b942;
+      --gold-dark: #c98e1e;
+      --text: #ffffff;
+      --muted: #8e8e98;
+      --green: #22c55e;
+      --red: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; user-select: none; -webkit-tap-highlight-color: transparent; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      height: 100vh;
+      padding: 14px;
+      overflow: hidden;
+    }
+
+    /* Top Header */
+    .header {
+      width: 100%;
+      max-width: 400px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .pill-btn {
+      background: var(--card);
+      border: 1.5px solid var(--gold);
+      color: var(--text);
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      box-shadow: 0 0 12px rgba(245, 185, 66, 0.15);
+    }
+    .pill-btn:active { transform: scale(0.96); }
+    .icon-btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    /* Center Points Display */
+    .score-area {
+      text-align: center;
+      margin: 4px 0;
+    }
+    .score-label {
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .score-value {
+      font-size: 42px;
+      font-weight: 800;
+      color: var(--text);
+      text-shadow: 0 0 20px rgba(245, 185, 66, 0.25);
+    }
+    .sub-pill {
+      display: inline-block;
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 11px;
+      color: var(--gold);
+      margin-top: 2px;
+    }
+
+    /* 8x8 Grid */
+    .board {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 4px;
+      background: var(--card);
+      padding: 8px;
+      border-radius: 16px;
+      border: 1.5px solid var(--border);
+      width: 100%;
+      max-width: 360px;
+      aspect-ratio: 1 / 1;
+      touch-action: none;
+    }
+    .cell {
+      background: #1f1f26;
+      border-radius: 6px;
+      transition: background 0.1s, transform 0.15s;
+    }
+    .cell.filled {
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+      box-shadow: inset 0 1px 2px rgba(255,255,255,0.4);
+    }
+    .cell.preview {
+      background: rgba(245, 185, 66, 0.35);
+      border: 1px dashed var(--gold);
+    }
+
+    /* Bottom Shapes Tray */
+    .tray {
+      width: 100%;
+      max-width: 380px;
+      height: 110px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 10px;
+    }
+    .piece-slot {
+      width: 90px;
+      height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: none;
+    }
+    .piece-grid {
+      display: grid;
+      gap: 3px;
+      cursor: grab;
+    }
+    .p-block {
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    }
+    .p-empty { width: 18px; height: 18px; }
+
+    /* Dragging Floating Piece */
+    #drag-ghost {
+      position: fixed;
+      pointer-events: none;
+      z-index: 999;
+      display: none;
+      transform: translate(-50%, -120%);
+    }
+    #drag-ghost .p-block { width: 34px; height: 34px; border-radius: 6px; box-shadow: 0 8px 20px rgba(0,0,0,0.6); }
+    #drag-ghost .p-empty { width: 34px; height: 34px; }
+
+    /* Modals */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+    .modal {
+      background: var(--card);
+      border: 1.5px solid var(--gold);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 350px;
+      padding: 20px;
+      text-align: center;
+      animation: popIn 0.2s ease;
+    }
+    @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .modal h2 { font-size: 20px; margin-bottom: 6px; color: var(--gold); }
+    .modal p { font-size: 13px; color: var(--muted); margin-bottom: 14px; }
+
+    /* 10s Progress Bar */
+    .timer-bar-bg {
+      width: 100%;
+      height: 8px;
+      background: #2a2a32;
+      border-radius: 99px;
+      overflow: hidden;
+      margin: 12px 0;
+    }
+    .timer-bar-fill {
+      height: 100%;
+      width: 100%;
+      background: var(--gold);
+      transition: width 0.1s linear;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: none;
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: #000; }
+    .btn-green { background: var(--green); color: #000; }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+    .input-box {
+      width: 100%;
+      padding: 11px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: #fff;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+    .method-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+    .tab { flex: 1; padding: 8px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--muted); font-size: 12px; font-weight: 600; cursor: pointer; }
+    .tab.active { border-color: var(--gold); color: var(--gold); }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <button class="pill-btn" onclick="openWallet()">💰 ₹<span id="wallet-bal">0.00</span></button>
+    <button class="icon-btn" onclick="openRules()">📜 Rules</button>
+  </div>
+
+  <!-- Center Points -->
+  <div class="score-area">
+    <div class="score-label">Today's Points</div>
+    <div class="score-value" id="points-display">0</div>
+    <div class="sub-pill">10,000 Pts = ₹10 • Converts at 12:00 AM</div>
+  </div>
+
+  <!-- 8x8 Game Board -->
+  <div class="board" id="board"></div>
+
+  <!-- Bottom Pieces Tray -->
+  <div class="tray" id="tray">
+    <div class="piece-slot" id="slot-0"></div>
+    <div class="piece-slot" id="slot-1"></div>
+    <div class="piece-slot" id="slot-2"></div>
+  </div>
+
+  <!-- Drag Ghost -->
+  <div id="drag-ghost"></div>
+
+  <!-- Game Over 10-Sec Modal -->
+  <div class="modal-overlay" id="gameover-modal">
+    <div class="modal">
+      <h2>GAME OVER!</h2>
+      <p>Run Points: <strong style="color:#fff" id="run-points">0</strong></p>
+      <div class="timer-bar-bg"><div class="timer-bar-fill" id="timer-fill"></div></div>
+      <button class="btn btn-green" onclick="handleRevive()">❤️ Revive (Watch 2 Ads)</button>
+      <button class="btn btn-gold" onclick="handleDoublePoints()">⚡ Claim 2X Points (Watch 2 Ads)</button>
+      <button class="btn btn-outline" onclick="finishGame()">No Thanks, Restart</button>
+    </div>
+  </div>
+
+  <!-- Wallet Modal -->
+  <div class="modal-overlay" id="wallet-modal">
+    <div class="modal">
+      <h2>Your Wallet</h2>
+      <p style="margin-bottom:4px;">Available Balance: <strong style="color:#22c55e; font-size:18px;">₹<span id="modal-bal">0.00</span></strong></p>
+      <p style="font-size:11px;">Pending Points: <span id="modal-pts">0</span> (Converts at 12 AM)</p>
+
+      <div id="referral-lock-box" style="background:#1f1f26; padding:10px; border-radius:12px; margin-bottom:12px; border:1px dashed var(--gold);">
+        <div style="font-size:12px; color:var(--gold); font-weight:700;">🔒 First Withdrawal Locked (0/1 Referral)</div>
+        <div style="font-size:11px; color:var(--muted); margin:4px 0 8px;">Invite 1 friend to unlock lifetime withdrawals!</div>
+        <button class="btn btn-gold" style="margin:0; padding:8px; font-size:12px;" onclick="shareReferral()">📤 Invite 1 Friend on Telegram</button>
+      </div>
+
+      <div class="method-tabs">
+        <div class="tab active" id="tab-upi" onclick="selectMethod('UPI')">UPI Transfer</div>
+        <div class="tab" id="tab-redeem" onclick="selectMethod('REDEEM')">Play Redeem Code</div>
+      </div>
+
+      <input type="text" class="input-box" id="payout-input" placeholder="Enter your UPI ID (e.g. name@upi)" />
+      <button class="btn btn-green" onclick="requestWithdraw()">Withdraw ₹10 (Min ₹10)</button>
+      <button class="btn btn-outline" onclick="closeModal('wallet-modal')">Close</button>
+    </div>
+  </div>
+
+  <!-- Rules Modal -->
+  <div class="modal-overlay" id="rules-modal">
+    <div class="modal">
+      <h2>How It Works</h2>
+      <p style="text-align:left; line-height:1.6;">
+        • <b>1 Block Placed</b> = +1 Point<br>
+        • <b>1 Line Cleared</b> = +10 Points<br>
+        • <b>10,000 Points</b> = ₹10.00<br>
+        • Points automatically convert to ₹ at <b>12:00 AM</b>.<br>
+        • Minimum Payout: <b>₹10</b> (UPI or Google Play Redeem Code).
+      </p>
+      <button class="btn btn-gold" onclick="closeModal('rules-modal')">Got It!</button>
+    </div>
+  </div>
+
+<script>
+  // Telegram WebApp Init
+  const tg = window.Telegram?.WebApp;
+    
