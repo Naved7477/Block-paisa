@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Block Paisa</title>
-  <script src="https://telegram.org"></script>
-  <script src='//://libtl.com' data-zone='12333384' data-sdk='show_12333384'></script>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://libtl.com/sdk.js" data-zone="12333384" data-sdk="show_12333384"></script>
   <style>
     :root {
       --bg: #0c0c0e;
@@ -443,15 +443,27 @@ function getTargetCell(clientX, clientY) {
     });
   }
 
-  function showAd(count, onComplete) {
-    if (typeof show_12333384 === 'function') {
-      show_12333384().then(() => {
-        if (count > 1) show_12333384().then(onComplete).catch(onComplete);
-        else onComplete();
-      }).catch(onComplete);
-    } else {
-      onComplete();
-    }
+  function showAd(count, onComplete, isReward) {
+  if (typeof show_12333384 === 'function') {
+    show_12333384().then(() => {
+      if (count > 1) {
+        show_12333384().then(onComplete).catch(() => {
+          if (isReward) alert('Please watch both ads completely to claim reward!');
+          else onComplete();
+        });
+      } else {
+        onComplete();
+      }
+    }).catch(() => {
+      if (isReward) alert('Ad loading! Wait 2 seconds and tap again.');
+      else onComplete();
+    });
+  } else {
+    if (isReward) alert('Ads are loading, please try again in a moment!');
+    else onComplete();
+  }
+  }
+  
   }
 
   function triggerGameOver() {
@@ -475,19 +487,20 @@ function getTargetCell(clientX, clientY) {
     else openPopup();
   }
 
-  function handleRevive() {
+    function handleRevive() {
     clearInterval(timerInterval);
     showAd(2, () => {
-      board.fill(0); board.fill(0); board.fill(0);
+      board = Array.from({ length: 8 }, () => Array(8).fill(0));
       renderBoard();
       closeModal('gameover-modal');
-    });
+    }, true);
   }
 
   function handleDoublePoints() {
     clearInterval(timerInterval);
-    showAd(2, () => finishGame(true));
+    showAd(2, () => finishGame(true), true);
   }
+  
 
   async function finishGame(isDouble) {
     clearInterval(timerInterval);
