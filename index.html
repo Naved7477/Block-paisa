@@ -544,7 +544,7 @@ function getTargetCell(clientX, clientY) {
     if (state.referrals < 1) { alert('Please invite 1 friend who starts the bot to unlock your first withdrawal!'); return; }
     const minAmt = state.firstWithdrawDone ? 30 : 10;
     if (state.wallet < minAmt) { alert('Minimum withdrawal is ₹' + minAmt + '. Keep playing to earn more!'); return; }
-    const detail = document.getElementById('payout-input').value.trim();
+        const detail = document.getElementById('payout-input').value.trim();
     if (!detail) { alert('Please enter valid details!'); return; }
 
     state.wallet = Math.round((state.wallet - minAmt) * 1000) / 1000;
@@ -571,11 +571,26 @@ function getTargetCell(clientX, clientY) {
   function openRules() { document.getElementById('rules-modal').style.display = 'flex'; }
   function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
+  function autoSaveOnExit() {
+    if (runPoints > 0) {
+      const earnedRs = runPoints / 1000;
+      state.totalEarnedPts += runPoints;
+      state.wallet = Math.round((state.wallet + earnedRs) * 1000) / 1000;
+      runPoints = 0;
+      fetch(DB_URL + "/users/" + userId + ".json", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: userName, wallet: state.wallet, totalEarnedPts: state.totalEarnedPts }),
+        keepalive: true
+      });
+    }
+  }
+  window.addEventListener("pagehide", autoSaveOnExit);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") autoSaveOnExit(); });
+
   loadCloudData();
   renderBoard();
   spawnTray();
 </script>
 </body>
 </html>
-
-  
