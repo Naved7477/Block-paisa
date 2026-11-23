@@ -289,7 +289,7 @@
   function createPieceElement(shape) {
     const grid = document.createElement('div');
     grid.className = 'piece-grid';
-    const cols = shape.length;
+    const cols = shape[0].length;
     grid.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
     for (let r = 0; r < shape.length; r++) {
       for (let c = 0; c < cols; c++) {
@@ -325,7 +325,7 @@ function getTargetCell(clientX, clientY) {
   const cellSize = rect.width / 8;
   const shape = trayPieces[draggingIdx];
   const rows = shape.length;
-  const cols = shape.length;
+  const cols = shape[0].length;
   // Slight horizontal boost near edges so finger doesn't trigger phone back-gesture
   const centerX = rect.left + rect.width / 2;
   const boostedX = centerX + (clientX - centerX) * 1.12;
@@ -351,7 +351,7 @@ function getTargetCell(clientX, clientY) {
     if (canPlace(shape, row, col)) {
       lastValidPos = { row, col };
       for (let r = 0; r < shape.length; r++) {
-        for (let c = 0; c < shape.length; c++) {
+      for (let c = 0; c < shape[0].length; c++) {
           if (shape[r][c] === 1) {
             const idx = (row + r) * 8 + (col + c);
             if (boardEl.children[idx]) boardEl.children[idx].classList.add('preview');
@@ -387,7 +387,7 @@ function getTargetCell(clientX, clientY) {
 
   function canPlace(shape, startR, startC) {
     for (let r = 0; r < shape.length; r++) {
-      for (let c = 0; c < shape.length; c++) {
+      for (let c = 0; c < shape[0].length; c++) {
         if (shape[r][c] === 1) {
           const nr = startR + r, nc = startC + c;
           if (nr < 0 || nr >= 8 || nc < 0 || nc >= 8 || board[nr][nc] === 1) return false;
@@ -400,7 +400,7 @@ function getTargetCell(clientX, clientY) {
   function placePiece(shape, startR, startC) {
     let blocksCount = 0;
     for (let r = 0; r < shape.length; r++) {
-      for (let c = 0; c < shape.length; c++) {
+      for (let c = 0; c < shape[0].length; c++) {
         if (shape[r][c] === 1) {
           board[startR + r][startC + c] = 1;
           blocksCount++;
