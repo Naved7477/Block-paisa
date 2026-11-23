@@ -1,4 +1,4 @@
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
 if (req.method !== 'POST') {
   const setupUrl = "https:" + "//api.telegram.org/bot8210572669:AAFVeuGHweMCdCW0ai8ezBbR0EyVMqRM/setWebhook?url=https:" + "//blockpaisa.vercel.app/api/webhook";
   const r = await fetch(setupUrl);
