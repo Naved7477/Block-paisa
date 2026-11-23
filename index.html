@@ -5,8 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Block Paisa</title>
   <script src="https://telegram.org"></script>
-    <script src='//libtl.com/sdk.js' data-zone='12333384' data-sdk='show_12333384'></script>
-  
+  <script src='//://libtl.com' data-zone='12333384' data-sdk='show_12333384'></script>
   <style>
     :root {
       --bg: #0c0c0e;
@@ -168,15 +167,12 @@
       <button class="btn btn-gold" onclick="closeModal('rules-modal')">Got It!</button>
     </div>
   </div>
-  <script>
+
+<script>
   const tg = window.Telegram && window.Telegram.WebApp;
   if (tg) { tg.expand(); tg.ready(); }
 
   const DB_URL = "https:" + "//block-paisa-default-rtdb.asia-southeast1.firebasedatabase.app";
-  const BOT_TOKEN = "9210572669:AAFVeuGNHweMCdCDW0ai8ezbBBrOEyYMqRM";
-  const ADMIN_ID = "8219259239";
-    const MONETAG_ZONE_ID = "12333384";// Apna Monetag Zone ID yahan dalein
-
   const userId = String((tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) || "guest_test");
   const userName = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.first_name) || "Player";
 
@@ -196,7 +192,6 @@
   let timerInterval = null;
   let payoutMethod = 'UPI';
 
-  // Load permanent cloud data from Firebase
   async function loadCloudData() {
     try {
       const res = await fetch(DB_URL + "/users/" + userId + ".json");
@@ -206,12 +201,12 @@
         state.totalEarnedPts = Number(data.totalEarnedPts || 0);
         state.gamesPlayed = Number(data.gamesPlayed || 0);
         state.referrals = Number(data.referrals || 0);
-        state.firstWithdrawDone = Boolean(data.firstWithdrawDone);
+                state.firstWithdrawDone = Boolean(data.firstWithdrawDone);
       } else {
         await syncCloudData();
       }
       updateUI();
-    } catch (e) { console.log("Cloud load error", e); }
+    } catch (e) {}
   }
 
   async function syncCloudData() {
@@ -227,7 +222,7 @@
           firstWithdrawDone: state.firstWithdrawDone
         })
       });
-    } catch (e) { console.log("Cloud sync error", e); }
+    } catch (e) {}
   }
 
   const makeShape = (rows) => rows.map(r => r.split('').map(Number));
@@ -442,16 +437,13 @@
     });
   }
 
-  // Monetag Ad Function (Plays real Monetag ad when Zone ID is set)
   function showAd(count, onComplete) {
-    const adFn = window['show_' + MONETAG_ZONE_ID];
-    if (typeof adFn === 'function') {
-      adFn().then(() => {
-        if (count > 1) adFn().then(onComplete).catch(onComplete);
+    if (typeof show_12333384 === 'function') {
+      show_12333384().then(() => {
+        if (count > 1) show_12333384().then(onComplete).catch(onComplete);
         else onComplete();
       }).catch(onComplete);
     } else {
-      alert('Playing ' + count + ' Ad(s)...');
       onComplete();
     }
   }
@@ -462,7 +454,7 @@
     const openPopup = () => {
       document.getElementById('modal-run-pts').innerText = runPoints;
       document.getElementById('modal-run-rs').innerText = '₹' + formatRupees(runPoints / 1000);
-            document.getElementById('gameover-modal').style.display = 'flex';
+      document.getElementById('gameover-modal').style.display = 'flex';
       let timeLeft = 100;
       const fill = document.getElementById('timer-fill');
       fill.style.width = '100%';
@@ -512,7 +504,7 @@
     const minAmt = state.firstWithdrawDone ? 30 : 10;
     const unlocked = state.referrals >= 1;
     document.getElementById('modal-bal').innerText = formatRupees(state.wallet);
-    document.getElementById('ref-count-txt').innerText = Math.min(state.referrals, 1);
+        document.getElementById('ref-count-txt').innerText = Math.min(state.referrals, 1);
     document.getElementById('referral-lock-box').style.display = unlocked ? 'none' : 'block';
     document.getElementById('withdraw-btn').innerText = 'Withdraw ₹' + minAmt + ' (Min ₹' + minAmt + ')';
     document.getElementById('wallet-modal').style.display = 'flex';
@@ -547,14 +539,13 @@
     await fetch(DB_URL + "/withdrawals/" + userId + ".json", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount: minAmt, method: payoutMethod, detail: detail, status: "Pending", date: new Date().toLocaleDateString() })
+      body: JSON.stringify({ name: userName, amount: minAmt, method: payoutMethod, detail: detail, status: "Pending", date: new Date().toLocaleDateString() })
     });
 
-    const adminMsg = "🚨 *New Withdrawal Request!*\n👤 User: " + userName + " (`" + userId + "`)\n💰 Amount: *₹" + minAmt + "*\n💳 Method: *" + payoutMethod + "*\n📩 Details: `" + detail + "`";
-    await fetch("https:" + "//api.telegram.org/bot" + 9210572669:AAFVeuGNHweMCdCDW0ai8ezbBBrOEyYMqRM + "/sendMessage", {
+    await fetch("/api/webhook", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: ADMIN_ID, text: adminMsg, parse_mode: "Markdown" })
+      body: JSON.stringify({ type: "WITHDRAW_ALERT", userId: userId, name: userName, amount: minAmt, method: payoutMethod, detail: detail })
     });
 
     alert('✅ ₹' + minAmt + ' ' + payoutMethod + ' withdrawal requested! Check Transaction History in bot.');
@@ -571,5 +562,4 @@
 </body>
 </html>
 
-            
   
