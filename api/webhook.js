@@ -78,10 +78,13 @@ export default async function handler(req, res) {
         }
       }
 
-      replyText = "🔥 *Welcome to Block Paisa!*\n\n" +
+            replyText = "🔥 *Welcome to Block Paisa!*\n\n" +
         "🧱 Place blocks, clear lines, and earn real rewards!\n" +
         "💰 *1,000 Points = ₹1.00* (Instant Cloud Save)\n\n" +
-        "👇 Tap *Play Game* below to start playing!";
+        "👇 Tap *Play Game* below to start playing!\n\n" +
+        "🎮 *More Earning Game:*\n" +
+        "https:" + "//t.me/TapToPaisa\\_Official\\_bot?start=8219259239";
+      
     } 
     else if (text === "📜 Transaction History") {
       const txRes = await fetch(DB_URL + "/withdrawals/" + chatId + ".json");
