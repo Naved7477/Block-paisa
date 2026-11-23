@@ -108,7 +108,7 @@
   <div class="score-area">
     <div class="score-label">Game Score</div>
     <div class="score-value" id="run-display">0</div>
-    <div class="sub-pill">Today's Total: <strong id="total-pts-pill">0</strong> Pts • 10k = ₹10</div>
+    <div class="sub-pill">1,000 Pts = ₹1.00 • Instant Wallet Convert</div>
   </div>
 
   <div class="board" id="board"></div>
@@ -124,19 +124,18 @@
   <div class="modal-overlay" id="gameover-modal">
     <div class="modal">
       <h2>GAME OVER!</h2>
-      <p>Game Score: <strong style="color:#fff" id="modal-run-pts">0</strong> Pts</p>
+      <p>Earned: <strong style="color:#22c55e" id="modal-run-rs">₹0.000</strong> (<span id="modal-run-pts">0</span> Pts)</p>
       <div class="timer-bar-bg"><div class="timer-bar-fill" id="timer-fill"></div></div>
       <button class="btn btn-green" onclick="handleRevive()">❤️ Revive (Watch 2 Ads)</button>
-      <button class="btn btn-gold" onclick="handleDoublePoints()">⚡ Claim 2X Points (Watch 2 Ads)</button>
-      <button class="btn btn-outline" onclick="finishGame(false)">No Thanks (Save 1X & Restart)</button>
+      <button class="btn btn-gold" onclick="handleDoublePoints()">⚡ Claim 2X Reward (Watch 2 Ads)</button>
+      <button class="btn btn-outline" onclick="finishGame(false)">Collect 1X & Restart</button>
     </div>
   </div>
 
   <div class="modal-overlay" id="wallet-modal">
     <div class="modal">
       <h2>Your Wallet</h2>
-      <p style="margin-bottom:4px;">Available Balance: <strong style="color:#22c55e; font-size:18px;">₹<span id="modal-bal">0.00</span></strong></p>
-      <p style="font-size:11px;">Today's Saved Points: <strong style="color:#f5b942;" id="modal-pts">0</strong> (Converts at 12 AM)</p>
+      <p style="margin-bottom:10px;">Available Balance: <strong style="color:#22c55e; font-size:20px;">₹<span id="modal-bal">0.000</span></strong></p>
 
       <div id="referral-lock-box" style="background:#1f1f26; padding:10px; border-radius:12px; margin-bottom:12px; border:1px dashed var(--gold);">
         <div style="font-size:12px; color:var(--gold); font-weight:700;">🔒 First Withdrawal Locked (0/1 Referral)</div>
@@ -149,7 +148,7 @@
         <div class="tab" id="tab-redeem" onclick="selectMethod('REDEEM')">Play Redeem Code</div>
       </div>
 
-      <input type="text" class="input-box" id="payout-input" placeholder="Enter your UPI ID (e.g. name@upi)" />
+      <input type="text" class="input-box" id="payout-input" placeholder="Enter UPI ID (e.g. name@upi)" />
       <button class="btn btn-green" id="withdraw-btn" onclick="requestWithdraw()">Withdraw ₹10 (Min ₹10)</button>
       <button class="btn btn-outline" onclick="closeModal('wallet-modal')">Close</button>
     </div>
@@ -159,22 +158,21 @@
     <div class="modal">
       <h2>How It Works</h2>
       <p style="text-align:left; line-height:1.6;">
-        • <b>1 Block Placed</b> = +1 Point<br>
-        • <b>1 Line Cleared</b> = +10 Points<br>
-        • <b>10,000 Points</b> = ₹10.00 (Converts at <b>12:00 AM</b>)<br>
-        • First Payout: <b>₹10</b> (1 Referral Unlock), then <b>₹30</b> Min.
+        • <b>1 Block Placed</b> = +1 Point (₹0.001)<br>
+        • <b>1 Line Cleared</b> = +10 Points (₹0.010)<br>
+        • <b>Instant Convert:</b> Score adds to your Wallet right after Game Over.<br>
+        • <b>Withdrawal:</b> Min <b>₹10</b> first time (1 Referral Unlock), then Min <b>₹30</b>.
       </p>
       <button class="btn btn-gold" onclick="closeModal('rules-modal')">Got It!</button>
     </div>
   </div>
-
-<script>
+  <script>
   const tg = window.Telegram && window.Telegram.WebApp;
   if (tg) { tg.expand(); tg.ready(); }
 
   let state = JSON.parse(localStorage.getItem('blockPaisaState')) || {
-    points: 0,
-    wallet: 0.00,
+    wallet: 0.000,
+    totalEarnedPts: 0,
     gamesPlayed: 0,
     referralUnlocked: false,
     firstWithdrawDone: false
@@ -201,11 +199,14 @@
     makeShape(['110', '011']), makeShape(['011', '110'])
   ];
 
-    function updateUI() {
+  function formatRupees(val) {
+    return (val % 1 === 0) ? val.toFixed(2) : Number(val.toFixed(3)).toString();
+  }
+
+  function updateUI() {
     localStorage.setItem('blockPaisaState', JSON.stringify(state));
     document.getElementById('run-display').innerText = runPoints.toLocaleString();
-    document.getElementById('total-pts-pill').innerText = state.points.toLocaleString();
-    document.getElementById('wallet-bal').innerText = state.wallet.toFixed(2);
+    document.getElementById('wallet-bal').innerText = formatRupees(state.wallet);
   }
 
   const boardEl = document.getElementById('board');
@@ -223,7 +224,7 @@
   function spawnTray() {
     for (let i = 0; i < 3; i++) {
       if (!trayPieces[i]) {
-        const total = state.points + runPoints;
+        const total = (state.totalEarnedPts || 0) + runPoints;
         let hardChance = 0.15;
         if (total >= 50000) hardChance = 0.85;
         else if (total >= 40000) hardChance = 0.70;
@@ -273,6 +274,7 @@
     window.onpointermove = onDragMove;
     window.onpointerup = onDragEnd;
     window.onpointercancel = onDragEnd;
+    document.onpointerleave = onDragEnd;
   }
 
   function moveGhost(x, y) {
@@ -321,6 +323,7 @@
     window.onpointermove = null;
     window.onpointerup = null;
     window.onpointercancel = null;
+    document.onpointerleave = null;
     ghost.style.display = 'none';
     clearPreviews();
     if (draggingIdx === null) return;
@@ -406,6 +409,7 @@
     updateUI();
     const openPopup = () => {
       document.getElementById('modal-run-pts').innerText = runPoints;
+      document.getElementById('modal-run-rs').innerText = '₹' + formatRupees(runPoints / 1000);
       document.getElementById('gameover-modal').style.display = 'flex';
       let timeLeft = 100;
       const fill = document.getElementById('timer-fill');
@@ -438,7 +442,10 @@
   function finishGame(isDouble) {
     clearInterval(timerInterval);
     closeModal('gameover-modal');
-    state.points += isDouble ? (runPoints * 2) : runPoints;
+    const earnedPts = isDouble ? (runPoints * 2) : runPoints;
+    const earnedRs = earnedPts / 1000;
+    state.totalEarnedPts = (state.totalEarnedPts || 0) + earnedPts;
+    state.wallet = Math.round((state.wallet + earnedRs) * 1000) / 1000;
     runPoints = 0;
     board = Array.from({ length: 8 }, () => Array(8).fill(0));
     trayPieces = [null, null, null];
@@ -449,14 +456,13 @@
 
   function openWallet() {
     const minAmt = state.firstWithdrawDone ? 30 : 10;
-    document.getElementById('modal-bal').innerText = state.wallet.toFixed(2);
-    document.getElementById('modal-pts').innerText = state.points.toLocaleString();
+    document.getElementById('modal-bal').innerText = formatRupees(state.wallet);
     document.getElementById('referral-lock-box').style.display = state.referralUnlocked ? 'none' : 'block';
     document.getElementById('withdraw-btn').innerText = 'Withdraw ₹' + minAmt + ' (Min ₹' + minAmt + ')';
     document.getElementById('wallet-modal').style.display = 'flex';
   }
 
-  function selectMethod(method) {
+   function selectMethod(method) {
     payoutMethod = method;
     document.getElementById('tab-upi').classList.toggle('active', method === 'UPI');
     document.getElementById('tab-redeem').classList.toggle('active', method === 'REDEEM');
@@ -476,13 +482,13 @@
   function requestWithdraw() {
     if (!state.referralUnlocked) { alert('Please invite 1 friend first to unlock your first withdrawal!'); return; }
     const minAmt = state.firstWithdrawDone ? 30 : 10;
-    if (state.wallet < minAmt) { alert('Minimum withdrawal is ₹' + minAmt + '.00! Points convert at 12:00 AM.'); return; }
+    if (state.wallet < minAmt) { alert('Minimum withdrawal is ₹' + minAmt + '. Keep playing to earn more!'); return; }
     const detail = document.getElementById('payout-input').value.trim();
     if (!detail) { alert('Please enter valid details!'); return; }
-    state.wallet -= minAmt;
+    state.wallet = Math.round((state.wallet - minAmt) * 1000) / 1000;
     state.firstWithdrawDone = true;
     updateUI();
-      alert('₹' + minAmt + ' ' + payoutMethod + ' withdrawal requested for ' + detail + '!');
+    alert('₹' + minAmt + ' ' + payoutMethod + ' withdrawal requested for ' + detail + '!');
     closeModal('wallet-modal');
   }
 
@@ -495,3 +501,5 @@
 </script>
 </body>
 </html>
+
+  
