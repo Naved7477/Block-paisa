@@ -6,7 +6,7 @@ module.exports = async (req, res) => {
     const SUPPORT_USER = "@Game_Developer07";
 
     if (req.method !== 'POST') {
-      const setupUrl = "https:" + "//api.telegram.org/bot" + 9210572669:AAFVeuGNHweMCdCDW0ai8ezbBBrOEyYMqRM + "/setWebhook?url=" + WEB_APP_URL + "/api/webhook";
+      const setupUrl = "https:" + "//api.telegram.org/bot" + 9210572669:AAHqs5I4NPJoV0x-FWYx_BQlSiQMfX2payw + "/setWebhook?url=" + WEB_APP_URL + "/api/webhook";
       const r = await fetch(setupUrl);
       const data = await r.json();
       return res.status(200).json(data);
