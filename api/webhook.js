@@ -4,7 +4,7 @@ export default async function handler(req, res) {
     const DB_URL = "https:" + "//block-paisa-default-rtdb.asia-southeast1.firebasedatabase.app";
     const WEB_APP_URL = "https:" + "//blockpaisa.vercel.app";
     const ADMIN_ID = "8219259239";
-    const SUPPORT_USER = "@Game_Developer07";
+    const SUPPORT_USER = "@Game\\_Developer07";
 
     if (!BOT_TOKEN) {
       return res.status(200).json({ error: "BOT_TOKEN not found in Vercel Environment Variables" });
