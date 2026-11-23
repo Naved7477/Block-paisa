@@ -318,4 +318,354 @@
 
 <script>
   const tg = window.Telegram && window.Telegram.WebApp;
+  if (tg) { tg.expand(); tg.ready(); }
+
+  let state = JSON.parse(localStorage.getItem('blockPaisaState')) || {
+    points: 0,
+    wallet: 0.00,
+    gamesPlayed: 0,
+    referralUnlocked: false
+  };
+
+  let runPoints = 0;
+  let board = Array.from({ length: 8 }, () => Array(8).fill(0));
+  let trayPieces = [null, null, null];
+  let draggingIdx = null;
+  let timerInterval = null;
+  let payoutMethod = 'UPI';
+
+  const makeShape = (rows) => rows.map(r => r.split('').map(Number));
+
+  const EASY_SHAPES = [
+    makeShape(['1']),
+    makeShape(['11']),
+    makeShape(['1', '1']),
+    makeShape(['111']),
+    makeShape(['1', '1', '1']),
+    makeShape(['11', '11']),
+    makeShape(['10', '11']),
+    makeShape(['01', '11'])
+  ];
+
+  const HARD_SHAPES = [
+    makeShape(['111', '111', '111']),
+    makeShape(['11111']),
+    makeShape(['1', '1', '1', '1', '1']),
+    makeShape(['111', '100', '100']),
+    makeShape(['111', '001', '001']),
+    makeShape(['010', '111', '010']),
+    makeShape(['110', '011']),
+    makeShape(['011', '110'])
+  ];
+
+  function saveState() {
+    localStorage.setItem('blockPaisaState', JSON.stringify(state));
+    document.getElementById('points-display').innerText = state.points.toLocaleString();
+    document.getElementById('wallet-bal').innerText = state.wallet.toFixed(2);
+  }
+
+  const boardEl = document.getElementById('board');
+  function renderBoard() {
+    boardEl.innerHTML = '';
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell' + (board[r][c] === 1 ? ' filled' : '');
+        boardEl.appendChild(cell);
+      }
+    }
+  }
+
+  function spawnTray() {
+    for (let i = 0; i < 3; i++) {
+      if (!trayPieces[i]) {
+        let hardChance = 0.15;
+        if (state.points >= 50000) hardChance = 0.85;
+        else if (state.points >= 40000) hardChance = 0.70;
+        else if (state.points >= 20000) hardChance = 0.40;
+
+        const pool = Math.random() < hardChance ? HARD_SHAPES : EASY_SHAPES;
+        trayPieces[i] = pool[Math.floor(Math.random() * pool.length)];
+      }
+    }
+    renderTray();
+  }
+
+  function renderTray() {
+    for (let i = 0; i < 3; i++) {
+      const slot = document.getElementById('slot-' + i);
+      slot.innerHTML = '';
+      const shape = trayPieces[i];
+      if (!shape) continue;
+
+      const grid = createPieceElement(shape);
+      grid.onpointerdown = (e) => startDrag(e, i);
+      slot.appendChild(grid);
+    }
+  }
+
+  function createPieceElement(shape) {
+    const grid = document.createElement('div');
+    grid.className = 'piece-grid';
+    const cols = shape.length;
+    grid.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
+    for (let r = 0; r < shape.length; r++) {
+      for (let c = 0; c < cols; c++) {
+        const b = document.createElement('div');
+        b.className = shape[r][c] === 1 ? 'p-block' : 'p-empty';
+        grid.appendChild(b);
+      }
+    }
+    return grid;
+  }
+
+  const ghost = document.getElementById('drag-ghost');
+  function startDrag(e, idx) {
+    draggingIdx = idx;
+    const shape = trayPieces[idx];
+    ghost.innerHTML = '';
+    ghost.appendChild(createPieceElement(shape));
+    ghost.style.display = 'block';
+    moveGhost(e.clientX, e.clientY);
+
+    window.onpointermove = onDragMove;
+    window.onpointerup = onDragEnd;
+  }
+
+  function moveGhost(x, y) {
+    ghost.style.left = x + 'px';
+    ghost.style.top = y + 'px';
+  }
+
+  function getTargetCell(clientX, clientY) {
+    const rect = boardEl.getBoundingClientRect();
+    const cellSize = rect.width / 8;
+    const shape = trayPieces[draggingIdx];
+    const rows = shape.length;
+    const cols = shape.length;
+    const offsetY = 70;
+    const col = Math.floor((clientX - rect.left) / cellSize - cols / 2 + 0.5);
+    const row = Math.floor((clientY - offsetY - rect.top) / cellSize - rows / 2 + 0.5);
+    return { row, col };
+  }
+
+  function clearPreviews() {
+    document.querySelectorAll('.cell.preview').forEach(el => el.classList.remove('preview'));
+  }
+
+  function onDragMove(e) {
+    if (draggingIdx === null) return;
+    moveGhost(e.clientX, e.clientY);
+    clearPreviews();
+
+    const { row, col } = getTargetCell(e.clientX, e.clientY);
+    const shape = trayPieces[draggingIdx];
+    if (canPlace(shape, row, col)) {
+      for (let r = 0; r < shape.length; r++) {
+        for (let c = 0; c < shape.length; c++) {
+          if (shape[r][c] === 1) {
+            const idx = (row + r) * 8 + (col + c);
+            if (boardEl.children[idx]) boardEl.children[idx].classList.add('preview');
+          }
+        }
+      }
+    }
+  }
+
+  function onDragEnd(e) {
+    window.onpointermove = null;
+    window.onpointerup = null;
+    ghost.style.display = 'none';
+    clearPreviews();
+
+    if (draggingIdx === null) return;
+    const { row, col } = getTargetCell(e.clientX, e.clientY);
+    const shape = trayPieces[draggingIdx];
+
+    if (canPlace(shape, row, col)) {
+      placePiece(shape, row, col);
+      trayPieces[draggingIdx] = null;
+      if (trayPieces.every(p => p === null)) spawnTray();
+      else renderTray();
+      checkLines();
+      if (isGameOver()) triggerGameOver();
+    }
+    draggingIdx = null;
+  }
+
+  function canPlace(shape, startR, startC) {
+    for (let r = 0; r < shape.length; r++) {
+      for (let c = 0; c < shape.length; c++) {
+        if (shape[r][c] === 1) {
+          const nr = startR + r, nc = startC + c;
+          if (nr < 0 || nr >= 8 || nc < 0 || nc >= 8 || board[nr][nc] === 1) return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  function placePiece(shape, startR, startC) {
+    let blocksCount = 0;
+    for (let r = 0; r < shape.length; r++) {
+      for (let c = 0; c < shape.length; c++) {
+        if (shape[r][c] === 1) {
+          board[startR + r][startC + c] = 1;
+          blocksCount++;
+        }
+      }
+    }
+    state.points += blocksCount;
+    runPoints += blocksCount;
+    saveState();
+    renderBoard();
+  }
+
+  function checkLines() {
+    let fullRows = [], fullCols = [];
+    for (let r = 0; r < 8; r++) if (board[r].every(v => v === 1)) fullRows.push(r);
+    for (let c = 0; c < 8; c++) if (board.every(row => row[c] === 1)) fullCols.push(c);
+
+    fullRows.forEach(r => board[r].fill(0));
+    fullCols.forEach(c => board.forEach(row => row[c] = 0));
+
+    const cleared = fullRows.length + fullCols.length;
+    if (cleared > 0) {
+      const bonus = cleared * 10;
+      state.points += bonus;
+      runPoints += bonus;
+      saveState();
+      renderBoard();
+    }
+  }
+
+  function isGameOver() {
+    return trayPieces.every(shape => {
+      if (!shape) return true;
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          if (canPlace(shape, r, c)) return false;
+        }
+      }
+      return true;
+    });
+  }
+
+  function showAd(count, onComplete) {
+    alert('Playing ' + count + ' Ad(s)...');
+    onComplete();
+  }
+
+  function triggerGameOver() {
+    state.gamesPlayed++;
+    saveState();
+
+    const openPopup = () => {
+      document.getElementById('run-points').innerText = runPoints;
+      document.getElementById('gameover-modal').style.display = 'flex';
+      let timeLeft = 100;
+      const fill = document.getElementById('timer-fill');
+      fill.style.width = '100%';
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        timeLeft -= 1;
+        fill.style.width = timeLeft + '%';
+        if (timeLeft <= 0) { clearInterval(timerInterval); finishGame(); }
+      }, 100);
+    };
+
+    if (state.gamesPlayed >= 3) {
+      showAd(1, openPopup);
+    } else {
+      openPopup();
+    }
+  }
+
+  function handleRevive() {
+    clearInterval(timerInterval);
+    showAd(2, () => {
+      board.fill(0); board.fill(0); board.fill(0);
+      renderBoard();
+      closeModal('gameover-modal');
+    });
+  }
+
+  function handleDoublePoints() {
+    clearInterval(timerInterval);
+    showAd(2, () => {
+      state.points += runPoints;
+      saveState();
+      finishGame();
+    });
+  }
+
+  function finishGame() {
+    clearInterval(timerInterval);
+    closeModal('gameover-modal');
+    runPoints = 0;
+    board = Array.from({ length: 8 }, () => Array(8).fill(0));
+    trayPieces = [null, null, null];
+    renderBoard();
+    spawnTray();
+  }
+
+  function openWallet() {
+    document.getElementById('modal-bal').innerText = state.wallet.toFixed(2);
+    document.getElementById('modal-pts').innerText = state.points.toLocaleString();
+    document.getElementById('referral-lock-box').style.display = state.referralUnlocked ? 'none' : 'block';
+    document.getElementById('wallet-modal').style.display = 'flex';
+  }
+
+  function selectMethod(method) {
+    payoutMethod = method;
+    document.getElementById('tab-upi').classList.toggle('active', method === 'UPI');
+    document.getElementById('tab-redeem').classList.toggle('active', method === 'REDEEM');
+    document.getElementById('payout-input').placeholder = method === 'UPI'
+      ? 'Enter your UPI ID (e.g. name@upi)'
+      : 'Enter Email/WhatsApp for Play Redeem Code';
+  }
+
+  function shareReferral() {
+    const botUsername = "BlockPaisaGame_bot";
+    const userId = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) || "12345";
+    const link = 'https:' + '//t.me/' + botUsername + '?start=' + userId;
+    const text = "Play Block Paisa & win ₹10 UPI or Google Play Redeem Codes daily!";
+    if (tg) {
+      tg.openTelegramLink('https:' + '//t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent(text));
+    } else {
+      alert("Share Link: " + link);
+    }
+    state.referralUnlocked = true;
+    saveState();
+    openWallet();
+  }
+
+  function requestWithdraw() {
+    if (!state.referralUnlocked) {
+      alert("Please invite 1 friend first to unlock your first withdrawal!");
+      return;
+    }
+    if (state.wallet < 10) {
+      alert("Minimum withdrawal is ₹10.00! Keep playing, points convert at 12:00 AM.");
+      return;
+    }
+        const detail = document.getElementById('payout-input').value.trim();
+    if (!detail) { alert("Please enter valid details!"); return; }
+
+    state.wallet -= 10;
+    saveState();
+    alert('₹10 ' + payoutMethod + ' withdrawal requested for ' + detail + '!');
+    closeModal('wallet-modal');
+  }
+
+  function openRules() { document.getElementById('rules-modal').style.display = 'flex'; }
+  function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+  saveState();
+  renderBoard();
+  spawnTray();
+</script>
+</body>
+</html>
+
   
