@@ -1,11 +1,11 @@
 module.exports = async (req, res) => {
   try {
-    const BOT_TOKEN = "8210572669:AAFVeuGHweMCdCW0ai8ezBbR0EyVMqRM";
+    const BOT_TOKEN = "9210572669:AAFVeuGNHweMCdCDW0ai8ezbBBrOEyYMqRM";
     const WEB_APP_URL = "https:" + "//blockpaisa.vercel.app";
     const SUPPORT_USER = "@Game_Developer07";
 
     if (req.method !== 'POST') {
-      const setupUrl = "https:" + "//api.telegram.org/bot" + BOT_TOKEN + "/setWebhook?url=" + WEB_APP_URL + "/api/webhook";
+      const setupUrl = "https:" + "//api.telegram.org/bot" + 9210572669:AAFVeuGNHweMCdCDW0ai8ezbBBrOEyYMqRM + "/setWebhook?url=" + WEB_APP_URL + "/api/webhook";
       const r = await fetch(setupUrl);
       const data = await r.json();
       return res.status(200).json(data);
@@ -48,7 +48,7 @@ module.exports = async (req, res) => {
         "⏰ Hours: 10:00 AM – 8:00 PM IST";
     }
 
-    const apiUrl = "https:" + "//api.telegram.org/bot" + BOT_TOKEN + "/sendMessage";
+    const apiUrl = "https:" + "//api.telegram.org/bot" + 9210572669:AAFVeuGNHweMCdCDW0ai8ezbBBrOEyYMqRM + "/sendMessage";
     await fetch(apiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
