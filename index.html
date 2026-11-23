@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Block Paisa - Telegram Mini App</title>
+  <title>Block Paisa</title>
   <script src="https://telegram.org"></script>
   <style>
     :root {
@@ -15,7 +15,6 @@
       --text: #ffffff;
       --muted: #8e8e98;
       --green: #22c55e;
-      --red: #ef4444;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; user-select: none; -webkit-tap-highlight-color: transparent; }
     body {
@@ -28,217 +27,71 @@
       height: 100vh;
       padding: 14px;
       overflow: hidden;
+      touch-action: none;
     }
-
-    /* Top Header */
-    .header {
-      width: 100%;
-      max-width: 400px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+    .header { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; }
     .pill-btn {
-      background: var(--card);
-      border: 1.5px solid var(--gold);
-      color: var(--text);
-      padding: 8px 14px;
-      border-radius: 999px;
-      font-weight: 700;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-      box-shadow: 0 0 12px rgba(245, 185, 66, 0.15);
+      background: var(--card); border: 1.5px solid var(--gold); color: var(--text);
+      padding: 8px 14px; border-radius: 999px; font-weight: 700; font-size: 13px;
+      display: flex; align-items: center; gap: 6px; cursor: pointer;
     }
-    .pill-btn:active { transform: scale(0.96); }
     .icon-btn {
-      background: var(--card);
-      border: 1px solid var(--border);
-      color: var(--muted);
-      padding: 8px 12px;
-      border-radius: 999px;
-      font-size: 13px;
-      cursor: pointer;
+      background: var(--card); border: 1px solid var(--border); color: var(--muted);
+      padding: 8px 12px; border-radius: 999px; font-size: 13px; cursor: pointer;
     }
-
-    /* Center Points Display */
-    .score-area {
-      text-align: center;
-      margin: 4px 0;
-    }
-    .score-label {
-      font-size: 12px;
-      color: var(--muted);
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-    .score-value {
-      font-size: 42px;
-      font-weight: 800;
-      color: var(--text);
-      text-shadow: 0 0 20px rgba(245, 185, 66, 0.25);
-    }
+    .score-area { text-align: center; margin: 2px 0; }
+    .score-label { font-size: 11px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+    .score-value { font-size: 44px; font-weight: 800; color: var(--text); line-height: 1.1; }
     .sub-pill {
-      display: inline-block;
-      background: var(--card);
-      border: 1px solid var(--border);
-      padding: 4px 12px;
-      border-radius: 999px;
-      font-size: 11px;
-      color: var(--gold);
-      margin-top: 2px;
+      display: inline-block; background: var(--card); border: 1px solid var(--border);
+      padding: 4px 12px; border-radius: 999px; font-size: 11px; color: var(--gold); margin-top: 4px;
     }
-
-    /* 8x8 Grid */
     .board {
-      display: grid;
-      grid-template-columns: repeat(8, 1fr);
-      gap: 4px;
-      background: var(--card);
-      padding: 8px;
-      border-radius: 16px;
-      border: 1.5px solid var(--border);
-      width: 100%;
-      max-width: 360px;
-      aspect-ratio: 1 / 1;
-      touch-action: none;
+      display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px;
+      background: var(--card); padding: 8px; border-radius: 16px; border: 1.5px solid var(--border);
+      width: 100%; max-width: 350px; aspect-ratio: 1 / 1; touch-action: none;
     }
-    .cell {
-      background: #1f1f26;
-      border-radius: 6px;
-      transition: background 0.1s, transform 0.15s;
-    }
-    .cell.filled {
-      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-      box-shadow: inset 0 1px 2px rgba(255,255,255,0.4);
-    }
-    .cell.preview {
-      background: rgba(245, 185, 66, 0.35);
-      border: 1px dashed var(--gold);
-    }
-
-    /* Bottom Shapes Tray */
-    .tray {
-      width: 100%;
-      max-width: 380px;
-      height: 110px;
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      padding: 10px;
-    }
-    .piece-slot {
-      width: 90px;
-      height: 90px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      touch-action: none;
-    }
-    .piece-grid {
-      display: grid;
-      gap: 3px;
-      cursor: grab;
-    }
-    .p-block {
-      width: 16px;
-      height: 16px;
-      border-radius: 4px;
-      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-    }
-    .p-empty { width: 16px; height: 16px; }
-
-    /* Dragging Floating Piece */
-        #drag-ghost {
-      position: fixed;
-      pointer-events: none;
-      z-index: 999;
-      display: none;
-      transform: translate(-50%, -50%);
-    }
-    .cell.clearing {
-      animation: blastPop 0.35s ease-out forwards;
-    }
+    .cell { background: #1f1f26; border-radius: 6px; transition: background 0.1s; }
+    .cell.filled { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); box-shadow: inset 0 1px 2px rgba(255,255,255,0.4); }
+    .cell.preview { background: rgba(245, 185, 66, 0.35); border: 1px dashed var(--gold); }
+    .cell.clearing { animation: blastPop 0.35s ease-out forwards; }
     @keyframes blastPop {
       0% { transform: scale(1.15); background: #ffffff; box-shadow: 0 0 15px #fff; }
       100% { transform: scale(0); opacity: 0; }
     }
-    
+    .tray {
+      width: 100%; max-width: 380px; height: 110px; display: flex; justify-content: space-around;
+      align-items: center; background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 10px;
+    }
+    .piece-slot { width: 95px; height: 95px; display: flex; align-items: center; justify-content: center; touch-action: none; }
+    .piece-grid { display: grid; gap: 3px; }
+    .p-block { width: 16px; height: 16px; border-radius: 4px; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); }
+    .p-empty { width: 16px; height: 16px; }
+    #drag-ghost { position: fixed; pointer-events: none; z-index: 999; display: none; transform: translate(-50%, -50%); }
     #drag-ghost .p-block { width: 32px; height: 32px; border-radius: 6px; box-shadow: 0 8px 20px rgba(0,0,0,0.6); }
     #drag-ghost .p-empty { width: 32px; height: 32px; }
-
-    /* Modals */
     .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.85);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      padding: 16px;
+      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85);
+      display: none; align-items: center; justify-content: center; z-index: 1000; padding: 16px;
     }
     .modal {
-      background: var(--card);
-      border: 1.5px solid var(--gold);
-      border-radius: 20px;
-      width: 100%;
-      max-width: 350px;
-      padding: 20px;
-      text-align: center;
-      animation: popIn 0.2s ease;
+      background: var(--card); border: 1.5px solid var(--gold); border-radius: 20px;
+      width: 100%; max-width: 350px; padding: 20px; text-align: center;
     }
-    @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     .modal h2 { font-size: 20px; margin-bottom: 6px; color: var(--gold); }
-    .modal p { font-size: 13px; color: var(--muted); margin-bottom: 14px; }
-
-    /* 10s Progress Bar */
-    .timer-bar-bg {
-      width: 100%;
-      height: 8px;
-      background: #2a2a32;
-      border-radius: 99px;
-      overflow: hidden;
-      margin: 12px 0;
-    }
-    .timer-bar-fill {
-      height: 100%;
-      width: 100%;
-      background: var(--gold);
-      transition: width 0.1s linear;
-    }
-
+    .modal p { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+    .timer-bar-bg { width: 100%; height: 8px; background: #2a2a32; border-radius: 99px; overflow: hidden; margin: 12px 0; }
+    .timer-bar-fill { height: 100%; width: 100%; background: var(--gold); transition: width 0.1s linear; }
     .btn {
-      width: 100%;
-      padding: 12px;
-      border-radius: 12px;
-      border: none;
-      font-weight: 700;
-      font-size: 14px;
-      margin-bottom: 10px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
+      width: 100%; padding: 12px; border-radius: 12px; border: none; font-weight: 700;
+      font-size: 14px; margin-bottom: 10px; cursor: pointer;
     }
     .btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: #000; }
     .btn-green { background: var(--green); color: #000; }
     .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--muted); }
     .input-box {
-      width: 100%;
-      padding: 11px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: var(--bg);
-      color: #fff;
-      margin-bottom: 10px;
-      font-size: 14px;
+      width: 100%; padding: 11px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--bg); color: #fff; margin-bottom: 10px; font-size: 14px;
     }
     .method-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
     .tab { flex: 1; padding: 8px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--muted); font-size: 12px; font-weight: 600; cursor: pointer; }
@@ -247,50 +100,43 @@
 </head>
 <body>
 
-  <!-- Header -->
   <div class="header">
-    <button class="pill-btn" onclick="openWallet()">💰 ₹<span id="wallet-bal">0.00</span></button>
+    <button class="pill-btn" onclick="openWallet()">👛 Wallet • ₹<span id="wallet-bal">0.00</span></button>
     <button class="icon-btn" onclick="openRules()">📜 Rules</button>
   </div>
 
-  <!-- Center Points -->
   <div class="score-area">
-    <div class="score-label">Today's Points</div>
-    <div class="score-value" id="points-display">0</div>
-    <div class="sub-pill">10,000 Pts = ₹10 • Converts at 12:00 AM</div>
+    <div class="score-label">Game Score</div>
+    <div class="score-value" id="run-display">0</div>
+    <div class="sub-pill">Today's Total: <strong id="total-pts-pill">0</strong> Pts • 10k = ₹10</div>
   </div>
 
-  <!-- 8x8 Game Board -->
   <div class="board" id="board"></div>
 
-  <!-- Bottom Pieces Tray -->
   <div class="tray" id="tray">
     <div class="piece-slot" id="slot-0"></div>
     <div class="piece-slot" id="slot-1"></div>
     <div class="piece-slot" id="slot-2"></div>
   </div>
 
-  <!-- Drag Ghost -->
   <div id="drag-ghost"></div>
 
-  <!-- Game Over 10-Sec Modal -->
   <div class="modal-overlay" id="gameover-modal">
     <div class="modal">
       <h2>GAME OVER!</h2>
-      <p>Run Points: <strong style="color:#fff" id="run-points">0</strong></p>
+      <p>Game Score: <strong style="color:#fff" id="modal-run-pts">0</strong> Pts</p>
       <div class="timer-bar-bg"><div class="timer-bar-fill" id="timer-fill"></div></div>
       <button class="btn btn-green" onclick="handleRevive()">❤️ Revive (Watch 2 Ads)</button>
       <button class="btn btn-gold" onclick="handleDoublePoints()">⚡ Claim 2X Points (Watch 2 Ads)</button>
-      <button class="btn btn-outline" onclick="finishGame()">No Thanks, Restart</button>
+      <button class="btn btn-outline" onclick="finishGame(false)">No Thanks (Save 1X & Restart)</button>
     </div>
   </div>
 
-  <!-- Wallet Modal -->
   <div class="modal-overlay" id="wallet-modal">
     <div class="modal">
       <h2>Your Wallet</h2>
       <p style="margin-bottom:4px;">Available Balance: <strong style="color:#22c55e; font-size:18px;">₹<span id="modal-bal">0.00</span></strong></p>
-      <p style="font-size:11px;">Pending Points: <span id="modal-pts">0</span> (Converts at 12 AM)</p>
+      <p style="font-size:11px;">Today's Saved Points: <strong style="color:#f5b942;" id="modal-pts">0</strong> (Converts at 12 AM)</p>
 
       <div id="referral-lock-box" style="background:#1f1f26; padding:10px; border-radius:12px; margin-bottom:12px; border:1px dashed var(--gold);">
         <div style="font-size:12px; color:var(--gold); font-weight:700;">🔒 First Withdrawal Locked (0/1 Referral)</div>
@@ -304,21 +150,19 @@
       </div>
 
       <input type="text" class="input-box" id="payout-input" placeholder="Enter your UPI ID (e.g. name@upi)" />
-      <button class="btn btn-green" onclick="requestWithdraw()">Withdraw ₹10 (Min ₹10)</button>
+      <button class="btn btn-green" id="withdraw-btn" onclick="requestWithdraw()">Withdraw ₹10 (Min ₹10)</button>
       <button class="btn btn-outline" onclick="closeModal('wallet-modal')">Close</button>
     </div>
   </div>
 
-  <!-- Rules Modal -->
   <div class="modal-overlay" id="rules-modal">
     <div class="modal">
       <h2>How It Works</h2>
       <p style="text-align:left; line-height:1.6;">
         • <b>1 Block Placed</b> = +1 Point<br>
         • <b>1 Line Cleared</b> = +10 Points<br>
-        • <b>10,000 Points</b> = ₹10.00<br>
-        • Points automatically convert to ₹ at <b>12:00 AM</b>.<br>
-        • Minimum Payout: <b>₹10</b> (UPI or Google Play Redeem Code).
+        • <b>10,000 Points</b> = ₹10.00 (Converts at <b>12:00 AM</b>)<br>
+        • First Payout: <b>₹10</b> (1 Referral Unlock), then <b>₹30</b> Min.
       </p>
       <button class="btn btn-gold" onclick="closeModal('rules-modal')">Got It!</button>
     </div>
@@ -332,43 +176,35 @@
     points: 0,
     wallet: 0.00,
     gamesPlayed: 0,
-    referralUnlocked: false
+    referralUnlocked: false,
+    firstWithdrawDone: false
   };
 
   let runPoints = 0;
   let board = Array.from({ length: 8 }, () => Array(8).fill(0));
   let trayPieces = [null, null, null];
   let draggingIdx = null;
+  let lastValidPos = null;
   let timerInterval = null;
   let payoutMethod = 'UPI';
 
   const makeShape = (rows) => rows.map(r => r.split('').map(Number));
-
   const EASY_SHAPES = [
-    makeShape(['1']),
-    makeShape(['11']),
-    makeShape(['1', '1']),
-    makeShape(['111']),
-    makeShape(['1', '1', '1']),
-    makeShape(['11', '11']),
-    makeShape(['10', '11']),
-    makeShape(['01', '11'])
+    makeShape(['1']), makeShape(['11']), makeShape(['1', '1']),
+    makeShape(['111']), makeShape(['1', '1', '1']), makeShape(['11', '11']),
+    makeShape(['10', '11']), makeShape(['01', '11'])
   ];
-
   const HARD_SHAPES = [
-    makeShape(['111', '111', '111']),
-    makeShape(['11111']),
-    makeShape(['1', '1', '1', '1', '1']),
-    makeShape(['111', '100', '100']),
-    makeShape(['111', '001', '001']),
-    makeShape(['010', '111', '010']),
-    makeShape(['110', '011']),
-    makeShape(['011', '110'])
+    makeShape(['111', '111', '111']), makeShape(['11111']),
+    makeShape(['1', '1', '1', '1', '1']), makeShape(['111', '100', '100']),
+    makeShape(['111', '001', '001']), makeShape(['010', '111', '010']),
+    makeShape(['110', '011']), makeShape(['011', '110'])
   ];
 
-  function saveState() {
+    function updateUI() {
     localStorage.setItem('blockPaisaState', JSON.stringify(state));
-    document.getElementById('points-display').innerText = state.points.toLocaleString();
+    document.getElementById('run-display').innerText = runPoints.toLocaleString();
+    document.getElementById('total-pts-pill').innerText = state.points.toLocaleString();
     document.getElementById('wallet-bal').innerText = state.wallet.toFixed(2);
   }
 
@@ -387,11 +223,11 @@
   function spawnTray() {
     for (let i = 0; i < 3; i++) {
       if (!trayPieces[i]) {
+        const total = state.points + runPoints;
         let hardChance = 0.15;
-        if (state.points >= 50000) hardChance = 0.85;
-        else if (state.points >= 40000) hardChance = 0.70;
-        else if (state.points >= 20000) hardChance = 0.40;
-
+        if (total >= 50000) hardChance = 0.85;
+        else if (total >= 40000) hardChance = 0.70;
+        else if (total >= 20000) hardChance = 0.40;
         const pool = Math.random() < hardChance ? HARD_SHAPES : EASY_SHAPES;
         trayPieces[i] = pool[Math.floor(Math.random() * pool.length)];
       }
@@ -399,23 +235,17 @@
     renderTray();
   }
 
-    function renderTray() {
+  function renderTray() {
     for (let i = 0; i < 3; i++) {
       const slot = document.getElementById('slot-' + i);
       slot.innerHTML = '';
       slot.onpointerdown = null;
       const shape = trayPieces[i];
       if (!shape) continue;
-
-      const grid = createPieceElement(shape);
-      slot.onpointerdown = (e) => {
-        e.preventDefault();
-        startDrag(e, i);
-      };
-      slot.appendChild(grid);
+      slot.appendChild(createPieceElement(shape));
+      slot.onpointerdown = (e) => { e.preventDefault(); startDrag(e, i); };
     }
-    }
-  
+  }
 
   function createPieceElement(shape) {
     const grid = document.createElement('div');
@@ -427,18 +257,19 @@
         const b = document.createElement('div');
         b.className = shape[r][c] === 1 ? 'p-block' : 'p-empty';
         grid.appendChild(b);
-        const ghost = document.getElementById('drag-ghost');
-  let lastValidPos = null;
+      }
+    }
+    return grid;
+  }
 
+  const ghost = document.getElementById('drag-ghost');
   function startDrag(e, idx) {
     draggingIdx = idx;
     lastValidPos = null;
-    const shape = trayPieces[idx];
     ghost.innerHTML = '';
-    ghost.appendChild(createPieceElement(shape));
+    ghost.appendChild(createPieceElement(trayPieces[idx]));
     ghost.style.display = 'block';
     moveGhost(e.clientX, e.clientY);
-
     window.onpointermove = onDragMove;
     window.onpointerup = onDragEnd;
     window.onpointercancel = onDragEnd;
@@ -453,14 +284,12 @@
     const rect = boardEl.getBoundingClientRect();
     const cellSize = rect.width / 8;
     const shape = trayPieces[draggingIdx];
-    const rows = shape.length;
-    const cols = shape.length;
-    const ghostCenterY = clientY - 85;
-    const topLeftX = clientX - (cols * cellSize) / 2;
-    const topLeftY = ghostCenterY - (rows * cellSize) / 2;
-    const col = Math.round((topLeftX - rect.left) / cellSize);
-    const row = Math.round((topLeftY - rect.top) / cellSize);
-    return { row, col };
+    const topLeftX = clientX - (shape.length * cellSize) / 2;
+    const topLeftY = (clientY - 85) - (shape.length * cellSize) / 2;
+    return {
+      col: Math.round((topLeftX - rect.left) / cellSize),
+      row: Math.round((topLeftY - rect.top) / cellSize)
+    };
   }
 
   function clearPreviews() {
@@ -471,7 +300,6 @@
     if (draggingIdx === null) return;
     moveGhost(e.clientX, e.clientY);
     clearPreviews();
-
     const { row, col } = getTargetCell(e.clientX, e.clientY);
     const shape = trayPieces[draggingIdx];
     if (canPlace(shape, row, col)) {
@@ -489,16 +317,14 @@
     }
   }
 
-  function onDragEnd(e) {
+  function onDragEnd() {
     window.onpointermove = null;
     window.onpointerup = null;
     window.onpointercancel = null;
     ghost.style.display = 'none';
     clearPreviews();
-
     if (draggingIdx === null) return;
     const shape = trayPieces[draggingIdx];
-
     if (lastValidPos && canPlace(shape, lastValidPos.row, lastValidPos.col)) {
       placePiece(shape, lastValidPos.row, lastValidPos.col);
       if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
@@ -506,7 +332,7 @@
       if (trayPieces.every(p => p === null)) spawnTray();
       else renderTray();
       checkLines();
-      if (isGameOver()) triggerGameOver();
+      setTimeout(() => { if (isGameOver()) triggerGameOver(); }, 350);
     }
     draggingIdx = null;
     lastValidPos = null;
@@ -534,9 +360,8 @@
         }
       }
     }
-    state.points += blocksCount;
     runPoints += blocksCount;
-    saveState();
+    updateUI();
     renderBoard();
   }
 
@@ -544,22 +369,13 @@
     let fullRows = [], fullCols = [];
     for (let r = 0; r < 8; r++) if (board[r].every(v => v === 1)) fullRows.push(r);
     for (let c = 0; c < 8; c++) if (board.every(row => row[c] === 1)) fullCols.push(c);
-
     const cleared = fullRows.length + fullCols.length;
     if (cleared > 0) {
       if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy');
-      fullRows.forEach(r => {
-        for (let c = 0; c < 8; c++) if (boardEl.children[r * 8 + c]) boardEl.children[r * 8 + c].classList.add('clearing');
-      });
-      fullCols.forEach(c => {
-        for (let r = 0; r < 8; r++) if (boardEl.children[r * 8 + c]) boardEl.children[r * 8 + c].classList.add('clearing');
-      });
-
-      const bonus = cleared * 10;
-      state.points += bonus;
-      runPoints += bonus;
-      saveState();
-
+      fullRows.forEach(r => { for (let c = 0; c < 8; c++) if (boardEl.children[r * 8 + c]) boardEl.children[r * 8 + c].classList.add('clearing'); });
+      fullCols.forEach(c => { for (let r = 0; r < 8; r++) if (boardEl.children[r * 8 + c]) boardEl.children[r * 8 + c].classList.add('clearing'); });
+      runPoints += cleared * 10;
+      updateUI();
       setTimeout(() => {
         fullRows.forEach(r => board[r].fill(0));
         fullCols.forEach(c => board.forEach(row => row[c] = 0));
@@ -567,7 +383,6 @@
       }, 320);
     }
   }
-        
 
   function isGameOver() {
     return trayPieces.every(shape => {
@@ -588,10 +403,9 @@
 
   function triggerGameOver() {
     state.gamesPlayed++;
-    saveState();
-
+    updateUI();
     const openPopup = () => {
-      document.getElementById('run-points').innerText = runPoints;
+      document.getElementById('modal-run-pts').innerText = runPoints;
       document.getElementById('gameover-modal').style.display = 'flex';
       let timeLeft = 100;
       const fill = document.getElementById('timer-fill');
@@ -600,15 +414,11 @@
       timerInterval = setInterval(() => {
         timeLeft -= 1;
         fill.style.width = timeLeft + '%';
-        if (timeLeft <= 0) { clearInterval(timerInterval); finishGame(); }
+        if (timeLeft <= 0) { clearInterval(timerInterval); finishGame(false); }
       }, 100);
     };
-
-    if (state.gamesPlayed >= 3) {
-      showAd(1, openPopup);
-    } else {
-      openPopup();
-    }
+    if (state.gamesPlayed >= 3) showAd(1, openPopup);
+    else openPopup();
   }
 
   function handleRevive() {
@@ -622,27 +432,27 @@
 
   function handleDoublePoints() {
     clearInterval(timerInterval);
-    showAd(2, () => {
-      state.points += runPoints;
-      saveState();
-      finishGame();
-    });
+    showAd(2, () => finishGame(true));
   }
 
-  function finishGame() {
+  function finishGame(isDouble) {
     clearInterval(timerInterval);
     closeModal('gameover-modal');
+    state.points += isDouble ? (runPoints * 2) : runPoints;
     runPoints = 0;
     board = Array.from({ length: 8 }, () => Array(8).fill(0));
     trayPieces = [null, null, null];
+    updateUI();
     renderBoard();
     spawnTray();
   }
 
   function openWallet() {
+    const minAmt = state.firstWithdrawDone ? 30 : 10;
     document.getElementById('modal-bal').innerText = state.wallet.toFixed(2);
     document.getElementById('modal-pts').innerText = state.points.toLocaleString();
     document.getElementById('referral-lock-box').style.display = state.referralUnlocked ? 'none' : 'block';
+    document.getElementById('withdraw-btn').innerText = 'Withdraw ₹' + minAmt + ' (Min ₹' + minAmt + ')';
     document.getElementById('wallet-modal').style.display = 'flex';
   }
 
@@ -650,52 +460,38 @@
     payoutMethod = method;
     document.getElementById('tab-upi').classList.toggle('active', method === 'UPI');
     document.getElementById('tab-redeem').classList.toggle('active', method === 'REDEEM');
-    document.getElementById('payout-input').placeholder = method === 'UPI'
-      ? 'Enter your UPI ID (e.g. name@upi)'
-      : 'Enter Email/WhatsApp for Play Redeem Code';
+    document.getElementById('payout-input').placeholder = method === 'UPI' ? 'Enter UPI ID (e.g. name@upi)' : 'Enter Email/WhatsApp for Play Code';
   }
 
   function shareReferral() {
-    const botUsername = "BlockPaisaGame_bot";
-    const userId = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) || "12345";
-    const link = 'https:' + '//t.me/' + botUsername + '?start=' + userId;
-    const text = "Play Block Paisa & win ₹10 UPI or Google Play Redeem Codes daily!";
-    if (tg) {
-      tg.openTelegramLink('https:' + '//t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent(text));
-    } else {
-      alert("Share Link: " + link);
-    }
+    const link = 'https:' + '//t.me/BlockPaisaGame_bot?start=' + ((tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) || '12345');
+    const text = 'Play Block Paisa & win ₹10 UPI or Google Play Redeem Codes daily!';
+    if (tg) tg.openTelegramLink('https:' + '//t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent(text));
+    else alert('Share Link: ' + link);
     state.referralUnlocked = true;
-    saveState();
+    updateUI();
     openWallet();
   }
 
   function requestWithdraw() {
-    if (!state.referralUnlocked) {
-      alert("Please invite 1 friend first to unlock your first withdrawal!");
-      return;
-    }
-    if (state.wallet < 10) {
-      alert("Minimum withdrawal is ₹10.00! Keep playing, points convert at 12:00 AM.");
-      return;
-    }
-        const detail = document.getElementById('payout-input').value.trim();
-    if (!detail) { alert("Please enter valid details!"); return; }
-
-    state.wallet -= 10;
-    saveState();
-    alert('₹10 ' + payoutMethod + ' withdrawal requested for ' + detail + '!');
+    if (!state.referralUnlocked) { alert('Please invite 1 friend first to unlock your first withdrawal!'); return; }
+    const minAmt = state.firstWithdrawDone ? 30 : 10;
+    if (state.wallet < minAmt) { alert('Minimum withdrawal is ₹' + minAmt + '.00! Points convert at 12:00 AM.'); return; }
+    const detail = document.getElementById('payout-input').value.trim();
+    if (!detail) { alert('Please enter valid details!'); return; }
+    state.wallet -= minAmt;
+    state.firstWithdrawDone = true;
+    updateUI();
+      alert('₹' + minAmt + ' ' + payoutMethod + ' withdrawal requested for ' + detail + '!');
     closeModal('wallet-modal');
   }
 
   function openRules() { document.getElementById('rules-modal').style.display = 'flex'; }
   function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-  saveState();
+  updateUI();
   renderBoard();
   spawnTray();
 </script>
 </body>
 </html>
-
-  
