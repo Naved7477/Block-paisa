@@ -427,14 +427,12 @@
         const b = document.createElement('div');
         b.className = shape[r][c] === 1 ? 'p-block' : 'p-empty';
         grid.appendChild(b);
-      }
-    }
-    return grid;
-  }
+        const ghost = document.getElementById('drag-ghost');
+  let lastValidPos = null;
 
-  const ghost = document.getElementById('drag-ghost');
   function startDrag(e, idx) {
     draggingIdx = idx;
+    lastValidPos = null;
     const shape = trayPieces[idx];
     ghost.innerHTML = '';
     ghost.appendChild(createPieceElement(shape));
@@ -443,11 +441,12 @@
 
     window.onpointermove = onDragMove;
     window.onpointerup = onDragEnd;
+    window.onpointercancel = onDragEnd;
   }
 
   function moveGhost(x, y) {
     ghost.style.left = x + 'px';
-    ghost.style.top = y + 'px';
+    ghost.style.top = (y - 85) + 'px';
   }
 
   function getTargetCell(clientX, clientY) {
@@ -456,9 +455,11 @@
     const shape = trayPieces[draggingIdx];
     const rows = shape.length;
     const cols = shape.length;
-    const offsetY = 70;
-    const col = Math.floor((clientX - rect.left) / cellSize - cols / 2 + 0.5);
-    const row = Math.floor((clientY - offsetY - rect.top) / cellSize - rows / 2 + 0.5);
+    const ghostCenterY = clientY - 85;
+    const topLeftX = clientX - (cols * cellSize) / 2;
+    const topLeftY = ghostCenterY - (rows * cellSize) / 2;
+    const col = Math.round((topLeftX - rect.left) / cellSize);
+    const row = Math.round((topLeftY - rect.top) / cellSize);
     return { row, col };
   }
 
@@ -474,6 +475,7 @@
     const { row, col } = getTargetCell(e.clientX, e.clientY);
     const shape = trayPieces[draggingIdx];
     if (canPlace(shape, row, col)) {
+      lastValidPos = { row, col };
       for (let r = 0; r < shape.length; r++) {
         for (let c = 0; c < shape.length; c++) {
           if (shape[r][c] === 1) {
@@ -482,21 +484,24 @@
           }
         }
       }
+    } else {
+      lastValidPos = null;
     }
   }
 
   function onDragEnd(e) {
     window.onpointermove = null;
     window.onpointerup = null;
+    window.onpointercancel = null;
     ghost.style.display = 'none';
     clearPreviews();
 
     if (draggingIdx === null) return;
-    const { row, col } = getTargetCell(e.clientX, e.clientY);
     const shape = trayPieces[draggingIdx];
 
-    if (canPlace(shape, row, col)) {
-      placePiece(shape, row, col);
+    if (lastValidPos && canPlace(shape, lastValidPos.row, lastValidPos.col)) {
+      placePiece(shape, lastValidPos.row, lastValidPos.col);
+      if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
       trayPieces[draggingIdx] = null;
       if (trayPieces.every(p => p === null)) spawnTray();
       else renderTray();
@@ -504,6 +509,7 @@
       if (isGameOver()) triggerGameOver();
     }
     draggingIdx = null;
+    lastValidPos = null;
   }
 
   function canPlace(shape, startR, startC) {
@@ -539,18 +545,29 @@
     for (let r = 0; r < 8; r++) if (board[r].every(v => v === 1)) fullRows.push(r);
     for (let c = 0; c < 8; c++) if (board.every(row => row[c] === 1)) fullCols.push(c);
 
-    fullRows.forEach(r => board[r].fill(0));
-    fullCols.forEach(c => board.forEach(row => row[c] = 0));
-
     const cleared = fullRows.length + fullCols.length;
     if (cleared > 0) {
+      if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy');
+      fullRows.forEach(r => {
+        for (let c = 0; c < 8; c++) if (boardEl.children[r * 8 + c]) boardEl.children[r * 8 + c].classList.add('clearing');
+      });
+      fullCols.forEach(c => {
+        for (let r = 0; r < 8; r++) if (boardEl.children[r * 8 + c]) boardEl.children[r * 8 + c].classList.add('clearing');
+      });
+
       const bonus = cleared * 10;
       state.points += bonus;
       runPoints += bonus;
       saveState();
-      renderBoard();
+
+      setTimeout(() => {
+        fullRows.forEach(r => board[r].fill(0));
+        fullCols.forEach(c => board.forEach(row => row[c] = 0));
+        renderBoard();
+      }, 320);
     }
   }
+        
 
   function isGameOver() {
     return trayPieces.every(shape => {
