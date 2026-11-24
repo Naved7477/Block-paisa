@@ -102,7 +102,7 @@
 <body>
 
   <div class="header">
-    <button class="pill-btn" onclick="openWallet()">👛 Wallet • ₹<span id="wallet-bal">0.00</span></button>
+    <button class="pill-btn" onclick="openWallet()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f5b942" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M16 12h6"/><circle cx="16.5" cy="12" r="1" fill="#f5b942"/></svg> Wallet • ₹<span id="wallet-bal">0.00</span></button>
     <button class="icon-btn" onclick="openRules()">📜 Rules</button>
   </div>
 
@@ -143,6 +143,15 @@
         <div style="font-size:11px; color:var(--muted); margin:4px 0 8px;">Invite 1 friend who joins the bot to unlock lifetime withdrawals!</div>
         <button class="btn btn-gold" style="margin:0; padding:8px; font-size:12px;" onclick="shareReferral()">📤 Invite 1 Friend on Telegram</button>
       </div>
+         <div style="background:linear-gradient(135deg,#1f1f26,#2a2212); padding:10px; border-radius:12px; margin-bottom:12px; border:1px solid var(--gold); text-align:left;">
+     <div style="font-size:12px; color:var(--gold); font-weight:800;">🎁 NEW USER BONUS: GET ₹5.00 FREE!</div>
+     <div style="font-size:11px; color:#d4d4d8; margin:4px 0 8px;">Play our 1st game <b>Tap To Paisa</b> for 7 days (<b>7/7d Streak</b>) & send screenshot to support for ₹5 bonus!</div>
+     <div style="display:flex; gap:6px;">
+       <button class="btn btn-gold" style="margin:0; padding:7px; font-size:11px; flex:1;" onclick="openTapGame()">🎮 Start 7-Day Streak</button>
+       <button class="btn btn-outline" style="margin:0; padding:7px; font-size:11px; flex:1; color:#22c55e; border-color:#22c55e;" onclick="claimStreakBonus()">📩 Claim ₹5</button>
+     </div>
+         </div>
+      
 
       <div class="method-tabs">
         <div class="tab active" id="tab-upi" onclick="selectMethod('UPI')">UPI Transfer</div>
@@ -181,7 +190,9 @@
     totalEarnedPts: 0,
     gamesPlayed: 0,
     referrals: 0,
-    firstWithdrawDone: false
+    firstWithdrawDone: false,
+      referredBy: "",
+  referralBonusPaid: false 
   };
 
   let runPoints = 0;
@@ -202,6 +213,8 @@
         state.gamesPlayed = Number(data.gamesPlayed || 0);
         state.referrals = Number(data.referrals || 0);
         state.firstWithdrawDone = Boolean(data.firstWithdrawDone);
+              state.referredBy = data.referredBy || "";
+      state.referralBonusPaid = Boolean(data.referralBonusPaid);
       } else {
         await syncCloudData();
       }
@@ -461,6 +474,27 @@
 
   function triggerGameOver() {
     state.gamesPlayed++;
+      if (state.gamesPlayed >= 3 && state.referredBy && !state.referralBonusPaid) {
+    state.referralBonusPaid = true;
+    fetch(DB_URL + "/users/" + state.referredBy + ".json")
+      .then(r => r.json())
+      .then(refUser => {
+        if (refUser) {
+          const updatedBal = Math.round(((Number(refUser.wallet) || 0) + 2) * 1000) / 1000;
+          fetch(DB_URL + "/users/" + state.referredBy + ".json", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ wallet: updatedBal })
+          });
+        }
+      });
+    fetch(DB_URL + "/users/" + userId + ".json", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ referralBonusPaid: true })
+    });
+      }
+    
     syncCloudData();
     const openPopup = () => {
       document.getElementById('modal-run-pts').innerText = runPoints;
@@ -562,7 +596,16 @@
     alert('✅ ₹' + minAmt + ' ' + payoutMethod + ' withdrawal requested! Check Transaction History in bot.');
     closeModal('wallet-modal');
   }
+function openTapGame() {
+  const link = 'https:' + '//t.me/TapToPaisa_Official_bot?start=8219259239';
+  if (tg) tg.openTelegramLink(link);
+  else window.open(link, '_blank');
+}
 
+function claimStreakBonus() {
+  alert('Complete 7/7d Streak in Tap To Paisa (New Users Only) & send screenshot with your ID (' + userId + ') to @Game_Developer07 to get ₹5.00 added to your Wallet!');
+}
+    
   function openRules() { document.getElementById('rules-modal').style.display = 'flex'; }
   function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
