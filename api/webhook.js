@@ -58,26 +58,19 @@ export default async function handler(req, res) {
       const userRes = await fetch(DB_URL + "/users/" + chatId + ".json");
       const userData = await userRes.json();
 
-      if (!userData) {
+            if (!userData) {
         await fetch(DB_URL + "/users/" + chatId + ".json", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ wallet: 0, referrals: 0, firstWithdrawDone: false, referredBy: referrerId || "" })
+          body: JSON.stringify({
+            wallet: 0,
+            referrals: 0,
+            firstWithdrawDone: false,
+            referredBy: (referrerId && referrerId !== chatId) ? referrerId : ""
+          })
         });
-
-        if (referrerId && referrerId !== chatId) {
-          const refRes = await fetch(DB_URL + "/users/" + referrerId + ".json");
-          const refData = await refRes.json();
-          if (refData) {
-            await fetch(DB_URL + "/users/" + referrerId + ".json", {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ referrals: (refData.referrals || 0) + 1 })
-            });
-          }
-        }
-      }
-
+            }
+      
             replyText = "🔥 *Welcome to Block Paisa!*\n\n" +
         "🧱 Place blocks, clear lines, and earn real rewards!\n" +
         "💰 *1,000 Points = ₹1.00* (Instant Cloud Save)\n\n" +
