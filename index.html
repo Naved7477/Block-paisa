@@ -181,8 +181,17 @@
   if (tg) { tg.expand(); tg.ready(); }
 
   const DB_URL = "https:" + "//block-paisa-default-rtdb.asia-southeast1.firebasedatabase.app";
-  const tgUser = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user;
-  const userId = tgUser ? String(tgUser.id) : "guest_" + (localStorage.getItem("bp_gid") || (() => { const id = Math.floor(Math.random()*999999); localStorage.setItem("bp_gid", id); return id; })());
+  function getTgUser() {
+  if (window.Telegram?.WebApp?.initDataUnsafe?.user) return window.Telegram.WebApp.initDataUnsafe.user;
+  try {
+    const hash = window.location.hash.slice(1);
+    const raw = new URLSearchParams(hash).get('tgWebAppData');
+    if (raw) return JSON.parse(new URLSearchParams(raw).get('user'));
+  } catch (e) {}
+  return null;
+}
+const tgUser = getTgUser();
+    const userId = tgUser ? String(tgUser.id) : "guest_" + (localStorage.getItem("bp_gid") || (() => { const id = Math.floor(Math.random()*999999); localStorage.setItem("bp_gid", id); return id; })());
   const userName = tgUser ? (tgUser.first_name || "Player") : "Player";
 
   let state = {
@@ -215,14 +224,13 @@
         state.firstWithdrawDone = Boolean(data.firstWithdrawDone);
               state.referredBy = data.referredBy || "";
       state.referralBonusPaid = Boolean(data.referralBonusPaid);
-      } else {
-        await syncCloudData();
       }
       updateUI();
     } catch (e) {}
   }
 
   async function syncCloudData() {
+    if ((state.totalEarnedPts + runPoints) < 500 && state.wallet === 0) return;  
     try {
       await fetch(DB_URL + "/users/" + userId + ".json", {
         method: "PATCH",
@@ -474,26 +482,27 @@
 
   function triggerGameOver() {
     state.gamesPlayed++;
-      if (state.gamesPlayed >= 3 && state.referredBy && !state.referralBonusPaid) {
-    state.referralBonusPaid = true;
-    fetch(DB_URL + "/users/" + state.referredBy + ".json")
-      .then(r => r.json())
-      .then(refUser => {
-        if (refUser) {
-          const updatedBal = Math.round(((Number(refUser.wallet) || 0) + 2) * 1000) / 1000;
-          fetch(DB_URL + "/users/" + state.referredBy + ".json", {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ wallet: updatedBal })
-          });
-        }
+          if ((state.totalEarnedPts + runPoints) >= 1000 && state.referredBy && !state.referralBonusPaid) {
+      state.referralBonusPaid = true;
+      fetch(DB_URL + "/users/" + state.referredBy + ".json")
+        .then(r => r.json())
+        .then(refUser => {
+          if (refUser) {
+            const updatedBal = Math.round(((Number(refUser.wallet) || 0) + 2) * 1000) / 1000;
+            const updatedRefs = (Number(refUser.referrals) || 0) + 1;
+            fetch(DB_URL + "/users/" + state.referredBy + ".json", {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ wallet: updatedBal, referrals: updatedRefs })
+            });
+          }
+        });
+      fetch(DB_URL + "/users/" + userId + ".json", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ referralBonusPaid: true })
       });
-    fetch(DB_URL + "/users/" + userId + ".json", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ referralBonusPaid: true })
-    });
-      }
+          }
     
     syncCloudData();
     const openPopup = () => {
