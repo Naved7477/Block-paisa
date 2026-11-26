@@ -75,9 +75,9 @@ export default async function handler(req, res) {
         "🧱 Place blocks, clear lines, and earn real rewards!\n" +
         "💰 *1,000 Points = ₹1.00* (Instant Cloud Save)\n\n" +
         "👇 Tap *Play Game* below to start playing!\n\n" +
-        "🎮 *More Earning Game:*\n" +
-        "https:" + "//t.me/TapToPaisa\\_Official\\_bot?start=8219259239";
-      
+                "🎮 *More Earning Games:*\n" +
+        "1️⃣ Colour Paisa: https:" + "//t.me/ColorPaisaBot?start=ref123\n" +
+        "2️⃣ Tap To Paisa: https:" + "//t.me/TapToPaisa\\_Official\\_bot?start=8219259239";  
     } 
     else if (text === "📜 Transaction History") {
       const txRes = await fetch(DB_URL + "/withdrawals/" + chatId + ".json");
