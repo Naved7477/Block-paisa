@@ -140,13 +140,13 @@
 
       <div id="referral-lock-box" style="background:#1f1f26; padding:10px; border-radius:12px; margin-bottom:12px; border:1px dashed var(--gold);">
         <div style="font-size:12px; color:var(--gold); font-weight:700;">🔒 First Withdrawal Locked (<span id="ref-count-txt">0</span>/1 Referral)</div>
-        <div style="font-size:11px; color:var(--muted); margin:4px 0 8px;">Invite 1 friend who joins the bot to unlock lifetime withdrawals!</div>
+        <div style="font-size:11px; color:var(--muted); margin:4px 0 8px;">Invite 1 friend who scores 1,000 Pts to unlock withdrawals + earn ₹2.00 bonus!</div>
         <button class="btn btn-gold" style="margin:0; padding:8px; font-size:12px;" onclick="shareReferral()">📤 Invite 1 Friend on Telegram</button>
       </div>
          <div style="background:linear-gradient(135deg,#1f1f26,#2a2212); padding:10px; border-radius:12px; margin-bottom:12px; border:1px solid var(--gold); text-align:left;">
      <div style="font-size:12px; color:var(--gold); font-weight:800;">🎁 NEW USER BONUS: GET ₹5.00 FREE!</div>
-     <div style="font-size:11px; color:#d4d4d8; margin:4px 0 8px;">Play our 1st game <b>Tap To Paisa</b> for 7 days (<b>7/7d Streak</b>) & ₹5.00 will be credited automatically!</div>
-      <div style="display:flex; gap:6px;">
+     <div style="font-size:11px; color:#d4d4d8; margin:4px 0 8px;">Play our new game <b>Colour Paisa</b> for 7 days (<b>7/7d Streak</b>) & ₹5.00 will be credited automatically!</div>
+           <div style="display:flex; gap:6px;">
        <button class="btn btn-gold" style="margin:0; padding:7px; font-size:11px; flex:1;" onclick="openTapGame()">🎮 Start 7-Day Streak</button>
        <button class="btn btn-outline" style="margin:0; padding:7px; font-size:11px; flex:1; color:#22c55e; border-color:#22c55e;" onclick="claimStreakBonus()">📩 Claim ₹5</button>
      </div>
@@ -606,23 +606,21 @@ const tgUser = getTgUser();
     closeModal('wallet-modal');
   }
 function openTapGame() {
-  const link = 'https:' + '//t.me/TapToPaisa_Official_bot?start=8219259239';
+  const link = 'https:' + '//t.me/ColorPaisaBot?start=ref123';
   if (tg) tg.openTelegramLink(link);
   else window.open(link, '_blank');
 }
 
-  async function claimStreakBonus() {
-    await loadCloudData();
-    const res = await fetch(DB_URL + "/users/" + userId + ".json");
-    const d = await res.json();
-    if (d && d.streak5Paid) {
-      alert('✅ Congratulations! ₹5.00 has already been credited automatically to your Wallet!');
-    } else {
-      alert('⏳ Complete 7/7d Streak in Tap To Paisa first! Once you reach Day 7, ₹5.00 will automatically appear in your Wallet.');
-    }
+async function claimStreakBonus() {
+  await loadCloudData();
+  const res = await fetch(DB_URL + "/users/" + userId + ".json");
+  const d = await res.json();
+  if (d && d.streak5Paid) {
+    alert('✅ Congratulations! ₹5.00 has already been credited automatically to your Wallet!');
+  } else {
+    alert('⏳ Complete 7/7d Streak in Colour Paisa first! Once you reach Day 7, ₹5.00 will automatically appear in your Wallet.');
   }
-    
-    
+}
   function openRules() { document.getElementById('rules-modal').style.display = 'flex'; }
   function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
